@@ -64,14 +64,26 @@ public class MainMenu extends JFrame {
     }
 
     private JButton createMenuButton(String text, int x, int y) {
-        JButton btn = new JButton(text);
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setColor(new Color(10, 25, 45, 175));
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                super.paintComponent(g);
+                g2d.dispose();
+            }
+        };
+
         btn.setBounds(x, y, 300, 55);
         btn.setFont(new Font("Serif", Font.BOLD, 20));
         btn.setForeground(new Color(210, 230, 245));
         btn.setBackground(new Color(10, 25, 45, 175));
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
-        btn.setOpaque(true);
+        btn.setContentAreaFilled(false);
+        btn.setOpaque(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
