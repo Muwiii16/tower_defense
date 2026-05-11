@@ -40,11 +40,53 @@ public class LoginScreen extends JFrame {
         label.setBounds(760, 300, 400, 50);
         panel.add(label);
 
-        userField = new JTextField("Username");
+        userField = new JTextField("Username") {
+            {
+                setForeground(Color.GRAY);
+                addFocusListener(new java.awt.event.FocusAdapter() {
+                    public void focusGained(java.awt.event.FocusEvent e) {
+                        if (getText().equals("Username")) {
+                            setText("");
+                            setForeground(Color.BLACK);
+                        }
+                    }
+
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        if (getText().isEmpty()) {
+                            setText("Username");
+                            setForeground(Color.GRAY);
+                        }
+                    }
+                });
+            }
+        };
         userField.setBounds(810, 400, 300, 40);
         panel.add(userField);
 
-        passField = new JPasswordField();
+        passField = new JPasswordField() {
+            {
+                setForeground(Color.GRAY);
+                setEchoChar((char) 0);
+                setText("Password");
+                addFocusListener(new java.awt.event.FocusAdapter() {
+                    public void focusGained(java.awt.event.FocusEvent e) {
+                        if (String.valueOf(getPassword()).equals("Password")) {
+                            setText("");
+                            setForeground(Color.BLACK);
+                            setEchoChar('•');
+                        }
+                    }
+
+                    public void focusLost(java.awt.event.FocusEvent e) {
+                        if (String.valueOf(getPassword()).isEmpty()) {
+                            setForeground(Color.GRAY);
+                            setEchoChar((char) 0);
+                            setText("Password");
+                        }
+                    }
+                });
+            }
+        };
         passField.setBounds(810, 450, 300, 40);
         panel.add(passField);
 
@@ -65,8 +107,8 @@ public class LoginScreen extends JFrame {
 
         if (dbManager.validateLogin(user, pass)) {
             JOptionPane.showMessageDialog(this, "Login Successful! Welcome, Protector.");
-            this.dispose();
             new MainMenu().setVisible(true);
+            this.dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Invalid credentials. The shadows grow stronger...", "Error",
                     JOptionPane.ERROR_MESSAGE);
