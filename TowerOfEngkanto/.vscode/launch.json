@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run LoginScreen",
+            "request": "launch",
+            "mainClass": "LoginScreen",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "java",
+            "name": "Run MainMenu",
+            "request": "launch",
+            "mainClass": "MainMenu",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
