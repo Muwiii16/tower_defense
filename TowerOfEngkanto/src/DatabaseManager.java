@@ -1,7 +1,9 @@
 import java.sql.*;
 
 public class DatabaseManager {
-    private static final String URL = "jdbc:mysql://localhost:3306/tower_of_engkanto";
+    private static final String BASE_URL = "jdbc:mysql://localhost:3306/";
+    private static final String DB_NAME = "tower_of_engkanto";
+    private static final String URL = BASE_URL + DB_NAME;
     private static final String USER = "root";
     private static final String PASSWORD = null;
 
@@ -9,11 +11,48 @@ public class DatabaseManager {
 
     public DatabaseManager() {
         try {
+            Connection baseConn = DriverManager.getConnection(BASE_URL, USER, PASSWORD);
+            Statement stmt = baseConn.createStatement();
+            stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + DB_NAME);
+            System.out.println("Database ready!");
+            baseConn.close();
+
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
-            System.out.println("Database connection established.");
+
+            createTables();
+            System.out.println("Tables ready!");
+
         } catch (SQLException e) {
             System.err.println("Database connection failed: " + e.getMessage());
         }
+    }
+
+    private void createTables() throws SQLException {
+        Statement stmt = connection.createStatement();
+
+        stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS users (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "username VARCHAR(50) UNIQUE NOT NULL," +
+                        "password VARCHAR(50) NOT NULL" +
+                        ")");
+        stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS leaderboard (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "username VARCHAR(50) NOT NULL," +
+                        "score INT NOT NULL," +
+                        "difficulty VARCHAR(10) NOT NULL," +
+                        "stage_reached INT NOT NULL," +
+                        "date TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                        ")");
+        stmt.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS game_saves (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "username VARCHAR(50) UNIQUE NOT NULL," +
+                        "unlocked_stage INT DEFAULT 1," +
+                        "last_completed_stage INT DEFAULT 0," +
+                        "difficulty VARCHAR(10) DEFAULT 'easy'" +
+                        ")");
     }
 
     public boolean validateLogin(String username, String password) {
