@@ -66,6 +66,10 @@ public class MainMenu extends JFrame {
         JButton exitBtn = createMenuButton("exit_btn_def.png", "exit_btn_hover.png", btnX, 760, desiredWidth,
                 desiredHeight);
 
+        exitBtn.addActionListener(e -> {
+            System.exit(0);
+        });
+
         panel.add(startBtn);
         panel.add(howToBtn);
         panel.add(codexBtn);
