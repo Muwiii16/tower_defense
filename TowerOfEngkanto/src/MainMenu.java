@@ -4,6 +4,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 
 public class MainMenu extends JFrame {
     private BufferedImage backgroundImage;
@@ -50,12 +51,20 @@ public class MainMenu extends JFrame {
         panel.setLayout(null);
         setContentPane(panel);
 
-        int btnX = (1920 - 300) / 2;
+        int btnX = (1920 - 438) / 2;
 
-        JButton startBtn = createMenuButton("Start Game", btnX, 400);
-        JButton howToBtn = createMenuButton("How to Play", btnX, 475);
-        JButton codexBtn = createMenuButton("Codex", btnX, 550);
-        JButton exitBtn = createMenuButton("Exit", btnX, 625);
+        int desiredWidth = 400;
+        double originalAspect = 4.38;
+        int desiredHeight = (int) (desiredWidth / originalAspect);
+
+        JButton startBtn = createMenuButton("start_btn_def.png", "start_btn_hover.png", btnX, 400, desiredWidth,
+                desiredHeight);
+        JButton howToBtn = createMenuButton("htp_btn_def.png", "htp_btn_hover.png", btnX, 520, desiredWidth,
+                desiredHeight);
+        JButton codexBtn = createMenuButton("codex_btn_def.png", "codex_btn_hover.png", btnX, 640, desiredWidth,
+                desiredHeight);
+        JButton exitBtn = createMenuButton("exit_btn_def.png", "exit_btn_hover.png", btnX, 760, desiredWidth,
+                desiredHeight);
 
         panel.add(startBtn);
         panel.add(howToBtn);
@@ -63,27 +72,28 @@ public class MainMenu extends JFrame {
         panel.add(exitBtn);
     }
 
-    private JButton createMenuButton(String text, int x, int y) {
-        JButton btn = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(10, 25, 45, 175));
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-                super.paintComponent(g);
-                g2d.dispose();
-            }
-        };
+    private JButton createMenuButton(String normalPath, String hoverPath, int x, int y, int width, int height) {
+        JButton btn = new JButton();
 
-        btn.setBounds(x, y, 300, 55);
-        btn.setFont(new Font("Serif", Font.BOLD, 20));
-        btn.setForeground(new Color(210, 230, 245));
-        btn.setBackground(new Color(10, 25, 45, 175));
-        btn.setFocusPainted(false);
-        btn.setBorderPainted(false);
+        try {
+            BufferedImage normalImg = ImageIO.read(new File("assets/images/buttons/" + normalPath));
+            BufferedImage hoverImg = ImageIO.read(new File("assets/images/buttons/" + hoverPath));
+
+            Image normalImgScaled = normalImg.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            Image hoverImgScaled = hoverImg.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+
+            btn.setIcon(new ImageIcon(normalImgScaled));
+            btn.setRolloverIcon(new ImageIcon(hoverImgScaled));
+        } catch (IOException e) {
+            System.err.println("Could not load button images: " + e.getMessage());
+            btn.setText(normalPath.substring(0, normalPath.indexOf('_')));
+            btn.setForeground(Color.RED);
+        }
+
+        btn.setBounds(x, y, width, height);
         btn.setContentAreaFilled(false);
-        btn.setOpaque(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
