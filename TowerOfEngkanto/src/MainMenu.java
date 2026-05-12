@@ -4,18 +4,18 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 
 public class MainMenu extends JFrame {
     private BufferedImage backgroundImage;
 
-    public MainMenu() {
+    public MainMenu(String username) {
         setTitle("Tower of Engkanto");
         setSize(1920, 1080);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
         setUndecorated(true);
+        System.out.print("Logged in as: " + username);
 
         try {
             backgroundImage = ImageIO.read(new File("assets/images/background.png"));
@@ -63,16 +63,24 @@ public class MainMenu extends JFrame {
                 desiredHeight);
         JButton codexBtn = createMenuButton("codex_btn_def.png", "codex_btn_hover.png", btnX, 640, desiredWidth,
                 desiredHeight);
-        JButton exitBtn = createMenuButton("exit_btn_def.png", "exit_btn_hover.png", btnX, 760, desiredWidth,
+        JButton ldbBtn = createMenuButton("ldb_btn_def.png", "ldb_btn_hover.png", btnX, 760, desiredWidth,
+                desiredHeight);
+        JButton exitBtn = createMenuButton("exit_btn_def.png", "exit_btn_hover.png", btnX, 880, desiredWidth,
                 desiredHeight);
 
         exitBtn.addActionListener(e -> {
             System.exit(0);
         });
 
+        startBtn.addActionListener(e -> {
+            new StageSelect(username, 1).setVisible(true);
+            dispose();
+        });
+
         panel.add(startBtn);
         panel.add(howToBtn);
         panel.add(codexBtn);
+        panel.add(ldbBtn);
         panel.add(exitBtn);
     }
 
@@ -100,12 +108,5 @@ public class MainMenu extends JFrame {
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            MainMenu menu = new MainMenu();
-            menu.setVisible(true);
-        });
     }
 }

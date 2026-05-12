@@ -51,7 +51,8 @@ public class DatabaseManager {
                         "username VARCHAR(50) UNIQUE NOT NULL," +
                         "unlocked_stage INT DEFAULT 1," +
                         "last_completed_stage INT DEFAULT 0," +
-                        "difficulty VARCHAR(10) DEFAULT 'easy'" +
+                        "difficulty VARCHAR(10) DEFAULT 'easy'," +
+                        "total_points INT DEFAULT 0" +
                         ")");
     }
 
@@ -77,6 +78,12 @@ public class DatabaseManager {
             insertStmt.setString(1, username);
             insertStmt.setString(2, password);
             insertStmt.executeUpdate();
+
+            String saveQuery = "INSERT INTO game_saves (username, unlocked_stages, last_completed_stage, difficulty, total_points) VALUES (?, 1, 0, 'easy',0)";
+            PreparedStatement saveStmt = connection.prepareStatement(saveQuery);
+            saveStmt.setString(1, username);
+            saveStmt.executeUpdate();
+
             return true;
         } catch (SQLException e) {
             System.err.println("Registration error: " + e.getMessage());
