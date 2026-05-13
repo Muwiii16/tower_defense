@@ -59,6 +59,10 @@ public class StageSelect extends JFrame {
         int btnX = (1920 - btnWidth) / 2;
 
         JButton stage1Btn = createStageButton("stg1_btn.png", btnX, 300, btnWidth, btnHeight, false, Color.GREEN);
+        stage1Btn.addActionListener(e -> {
+            new DifficultySelect(username, 1, unlockedStage).setVisible(true);
+            dispose();
+        });
         JButton stage2Btn = createStageButton(unlockedStage >= 2 ? "stg2_btn.png" : "stg2_btn_lck.png", btnX, 500,
                 btnWidth, btnHeight, unlockedStage < 2, Color.MAGENTA);
         JButton stage3Btn = createStageButton(unlockedStage >= 3 ? "stg3_btn.png" : "stg3_btn_lck.png", btnX,
@@ -67,6 +71,13 @@ public class StageSelect extends JFrame {
         panel.add(stage1Btn);
         panel.add(stage2Btn);
         panel.add(stage3Btn);
+
+        JButton backBtn = createMenuButton("back_btn_def.png", "back_btn_hover.png", btnX, 870, btnWidth, btnHeight);
+        backBtn.addActionListener(e -> {
+            new MainMenu(username).setVisible(true);
+            dispose();
+        });
+        panel.add(backBtn);
     }
 
     private JButton createStageButton(String imagePath, int x, int y, int width, int height, boolean locked,
@@ -126,6 +137,32 @@ public class StageSelect extends JFrame {
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         else
             btn.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        return btn;
+    }
+
+    private JButton createMenuButton(String normalPath, String hoverPath, int x, int y, int width, int height) {
+        JButton btn = new JButton();
+
+        try {
+            BufferedImage normalImg = ImageIO.read(new File("assets/images/buttons/" + normalPath));
+            BufferedImage hoverImg = ImageIO.read(new File("assets/images/buttons/" + hoverPath));
+
+            Image normalImgScaled = normalImg.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            Image hoverImgScaled = hoverImg.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+
+            btn.setIcon(new ImageIcon(normalImgScaled));
+            btn.setRolloverIcon(new ImageIcon(hoverImgScaled));
+        } catch (IOException e) {
+            System.err.println("Could not load button images: " + e.getMessage());
+            btn.setText(normalPath.substring(0, normalPath.indexOf('_')));
+            btn.setForeground(Color.RED);
+        }
+
+        btn.setBounds(x, y, width, height);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
 }
