@@ -18,14 +18,22 @@ public class LoginScreen extends JFrame {
         setLocationRelativeTo(null);
         setUndecorated(true);
 
+        BufferedImage loginBg;
+        try {
+            loginBg = ImageIO.read(new File("assets/images/loginbg.png"));
+        } catch (Exception e) {
+            loginBg = null;
+        }
+
+        final BufferedImage finalBg = loginBg;
+
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                try {
-                    BufferedImage bg = ImageIO.read(new File("assets/images/loginbg.png"));
-                    g.drawImage(bg, 0, 0, getWidth(), getHeight(), null);
-                } catch (Exception e) {
+                if (finalBg != null) {
+                    g.drawImage(finalBg, 0, 0, getWidth(), getHeight(), null);
+                } else {
                     g.setColor(Color.DARK_GRAY);
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }

@@ -79,7 +79,7 @@ public class DatabaseManager {
             insertStmt.setString(2, password);
             insertStmt.executeUpdate();
 
-            String saveQuery = "INSERT INTO game_saves (username, unlocked_stages, last_completed_stage, difficulty, total_points) VALUES (?, 1, 0, 'easy',0)";
+            String saveQuery = "INSERT INTO game_saves (username, unlocked_stage, last_completed_stage, difficulty, total_points) VALUES (?, 1, 0, 'easy',0)";
             PreparedStatement saveStmt = connection.prepareStatement(saveQuery);
             saveStmt.setString(1, username);
             saveStmt.executeUpdate();
