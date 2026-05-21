@@ -13,7 +13,7 @@ public class LoginScreen extends JFrame {
         dbManager = new DatabaseManager();
 
         setTitle("Tower of Engkanto - Login");
-        setSize(1920, 1080);
+        setSize(ScreenUtils.WIDTH, ScreenUtils.HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setUndecorated(true);
@@ -40,6 +40,7 @@ public class LoginScreen extends JFrame {
             }
         };
         panel.setLayout(null);
+        panel.setDoubleBuffered(true);
         setContentPane(panel);
 
         JLabel label = new JLabel("AUTHENTICATION", SwingConstants.CENTER);
@@ -116,7 +117,7 @@ public class LoginScreen extends JFrame {
         if (dbManager.validateLogin(user, pass)) {
             JOptionPane.showMessageDialog(this, "Login Successful! Welcome, Protector.");
             new MainMenu(user).setVisible(true);
-            this.dispose();
+            setVisible(false);
         } else {
             JOptionPane.showMessageDialog(this, "Invalid credentials. The shadows grow stronger...", "Error",
                     JOptionPane.ERROR_MESSAGE);

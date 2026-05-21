@@ -10,7 +10,7 @@ public class MainMenu extends JFrame {
 
     public MainMenu(String username) {
         setTitle("Tower of Engkanto");
-        setSize(1920, 1080);
+        setSize(ScreenUtils.WIDTH, ScreenUtils.HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -49,6 +49,7 @@ public class MainMenu extends JFrame {
             }
         };
         panel.setLayout(null);
+        panel.setDoubleBuffered(true);
         setContentPane(panel);
 
         int btnX = (1920 - 438) / 2;

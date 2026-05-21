@@ -15,7 +15,7 @@ public class StageSelect extends JFrame {
         this.unlockedStage = unlockedStage;
 
         setTitle("Select Stage");
-        setSize(1920, 1080);
+        setSize(ScreenUtils.WIDTH, ScreenUtils.HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -52,6 +52,7 @@ public class StageSelect extends JFrame {
             }
         };
         panel.setLayout(null);
+        panel.setDoubleBuffered(true);
         setContentPane(panel);
 
         int btnWidth = 600;

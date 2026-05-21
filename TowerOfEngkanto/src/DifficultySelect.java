@@ -18,7 +18,7 @@ public class DifficultySelect extends JFrame {
         this.unlockedStage = unlockedStage;
 
         setTitle("Select Difficulty");
-        setSize(1920, 1080);
+        setSize(ScreenUtils.WIDTH, ScreenUtils.HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -63,6 +63,7 @@ public class DifficultySelect extends JFrame {
             }
         };
         panel.setLayout(null);
+        panel.setDoubleBuffered(true);
         setContentPane(panel);
 
         int btnWidth = 550;
