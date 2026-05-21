@@ -91,6 +91,20 @@ public class DatabaseManager {
         }
     }
 
+    public int getUnlockedStage(String username) {
+        try {
+            String query = "SELECT unlocked_stage FROM game_saves WHERE username = ?";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next())
+                return rs.getInt("unlocked_stage");
+        } catch (SQLException e) {
+            System.err.println("Error getting unlocked stage: " + e.getMessage());
+        }
+        return 1;
+    }
+
     public Connection getConnection() {
         return connection;
     }

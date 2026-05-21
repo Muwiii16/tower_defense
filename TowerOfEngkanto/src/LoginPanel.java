@@ -1,53 +1,33 @@
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 
-public class LoginScreen extends JFrame {
+public class LoginPanel extends BasePanel {
+
     private JTextField userField;
     private JPasswordField passField;
     private DatabaseManager dbManager;
 
-    public LoginScreen() {
+    public LoginPanel() {
+        super("assets/images/loginbg.png", null);
         dbManager = new DatabaseManager();
+    }
 
-        setTitle("Tower of Engkanto - Login");
-        setSize(ScreenUtils.WIDTH, ScreenUtils.HEIGHT);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setUndecorated(true);
+    @Override
+    public String getPanelName() {
+        return "login";
+    }
 
-        BufferedImage loginBg;
-        try {
-            loginBg = ImageIO.read(new File("assets/images/loginbg.png"));
-        } catch (Exception e) {
-            loginBg = null;
-        }
-
-        final BufferedImage finalBg = loginBg;
-
-        JPanel panel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (finalBg != null) {
-                    g.drawImage(finalBg, 0, 0, getWidth(), getHeight(), null);
-                } else {
-                    g.setColor(Color.DARK_GRAY);
-                    g.fillRect(0, 0, getWidth(), getHeight());
-                }
-            }
-        };
-        panel.setLayout(null);
-        panel.setDoubleBuffered(true);
-        setContentPane(panel);
+    @Override
+    protected void initComponents() {
+        int centerX = ScreenUtils.WIDTH / 2;
 
         JLabel label = new JLabel("AUTHENTICATION", SwingConstants.CENTER);
-        label.setFont(new Font("Serif", Font.BOLD, 40));
+        label.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(40)));
         label.setForeground(Color.WHITE);
-        label.setBounds(760, 300, 400, 50);
-        panel.add(label);
+        label.setBounds(centerX - ScreenUtils.scaleX(200), ScreenUtils.scaleY(300),
+                ScreenUtils.scaleX(400), ScreenUtils.scaleY(50));
+        add(label);
 
         userField = new JTextField("Username") {
             {
@@ -69,8 +49,9 @@ public class LoginScreen extends JFrame {
                 });
             }
         };
-        userField.setBounds(810, 400, 300, 40);
-        panel.add(userField);
+        userField.setBounds(centerX - ScreenUtils.scaleX(150), ScreenUtils.scaleY(400),
+                ScreenUtils.scaleX(300), ScreenUtils.scaleY(40));
+        add(userField);
 
         passField = new JPasswordField() {
             {
@@ -88,39 +69,52 @@ public class LoginScreen extends JFrame {
 
                     public void focusLost(java.awt.event.FocusEvent e) {
                         if (String.valueOf(getPassword()).isEmpty()) {
+                            setText("Password");
                             setForeground(Color.GRAY);
                             setEchoChar((char) 0);
-                            setText("Password");
                         }
                     }
                 });
             }
         };
-        passField.setBounds(810, 450, 300, 40);
-        panel.add(passField);
+        passField.setBounds(centerX - ScreenUtils.scaleX(150), ScreenUtils.scaleY(450),
+                ScreenUtils.scaleX(300), ScreenUtils.scaleY(40));
+        add(passField);
 
         JButton loginBtn = new JButton("LOGIN");
-        loginBtn.setBounds(810, 520, 145, 40);
+        loginBtn.setBounds(centerX - ScreenUtils.scaleX(150), ScreenUtils.scaleY(520),
+                ScreenUtils.scaleX(145), ScreenUtils.scaleY(40));
         loginBtn.addActionListener(e -> handleLogin());
-        panel.add(loginBtn);
+        add(loginBtn);
 
         JButton regBtn = new JButton("REGISTER");
-        regBtn.setBounds(965, 520, 145, 40);
+        regBtn.setBounds(centerX, ScreenUtils.scaleY(520),
+                ScreenUtils.scaleX(145), ScreenUtils.scaleY(40));
         regBtn.addActionListener(e -> handleRegister());
-        panel.add(regBtn);
+        add(regBtn);
     }
 
     private void handleLogin() {
         String user = userField.getText();
         String pass = new String(passField.getPassword());
 
+        if (user.equals("Username") || user.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter your username.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (pass.equals("Password") || pass.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter your password.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         if (dbManager.validateLogin(user, pass)) {
-            JOptionPane.showMessageDialog(this, "Login Successful! Welcome, Protector.");
-            new MainMenu(user).setVisible(true);
-            this.dispose();
+            // Get unlocked stage from DB then go to main menu
+            int unlockedStage = dbManager.getUnlockedStage(user);
+            App.getInstance().addPanel(new MainMenuPanel(user, unlockedStage), "mainmenu");
+            App.getInstance().showPanel("mainmenu");
         } else {
-            JOptionPane.showMessageDialog(this, "Invalid credentials. The shadows grow stronger...", "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Invalid credentials. The shadows grow stronger...",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -128,15 +122,20 @@ public class LoginScreen extends JFrame {
         String user = userField.getText();
         String pass = new String(passField.getPassword());
 
+        if (user.equals("Username") || user.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a username.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (pass.equals("Password") || pass.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a password.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         if (dbManager.registerUser(user, pass)) {
             JOptionPane.showMessageDialog(this, "Registration Successful! You may now log in.");
         } else {
-            JOptionPane.showMessageDialog(this, "Username already exists. Choose a different name.", "Error",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Username already exists. Choose a different name.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    public static void main(String[] args) {
-        new LoginScreen().setVisible(true);
     }
 }

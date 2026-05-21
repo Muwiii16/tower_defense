@@ -3,16 +3,9 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Run LoginScreen",
+            "name": "Run Game",
             "request": "launch",
-            "mainClass": "LoginScreen",
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "java",
-            "name": "Run MainMenu",
-            "request": "launch",
-            "mainClass": "MainMenu",
+            "mainClass": "App",
             "cwd": "${workspaceFolder}"
         }
     ]
