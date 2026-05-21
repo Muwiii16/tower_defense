@@ -117,7 +117,7 @@ public class LoginScreen extends JFrame {
         if (dbManager.validateLogin(user, pass)) {
             JOptionPane.showMessageDialog(this, "Login Successful! Welcome, Protector.");
             new MainMenu(user).setVisible(true);
-            setVisible(false);
+            this.dispose();
         } else {
             JOptionPane.showMessageDialog(this, "Invalid credentials. The shadows grow stronger...", "Error",
                     JOptionPane.ERROR_MESSAGE);
