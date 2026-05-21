@@ -39,6 +39,11 @@ public class MainMenuPanel extends BasePanel {
             App.getInstance().showPanel("stageselect");
         });
 
+        codexBtn.addActionListener(e -> {
+            App.getInstance().addPanel(new codex(username), "codex");
+            App.getInstance().showPanel("codex");
+        });
+
         exitBtn.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);

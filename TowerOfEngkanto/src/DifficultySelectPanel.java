@@ -19,16 +19,16 @@ public class DifficultySelectPanel extends BasePanel {
 
     @Override
     protected void initComponents() {
-        int btnWidth = ScreenUtils.scaleX(550);
-        int btnHeight = ScreenUtils.scaleY(97);
+        int btnWidth = ScreenUtils.scaleX(720);
+        int btnHeight = ScreenUtils.scaleY(180);
         int btnX = (ScreenUtils.WIDTH - btnWidth) / 2;
 
-        JButton easyBtn = createFadeButton("assets/images/stages/buttons/easy_btn.png",
-                btnX, ScreenUtils.scaleY(320), btnWidth, btnHeight);
-        JButton normalBtn = createFadeButton("assets/images/stages/buttons/normal_btn.png",
-                btnX, ScreenUtils.scaleY(500), btnWidth, btnHeight);
-        JButton hardBtn = createFadeButton("assets/images/stages/buttons/hard_btn.png",
-                btnX, ScreenUtils.scaleY(680), btnWidth, btnHeight);
+        JButton easyBtn = createImageButton("assets/images/stages/buttons/easy_btn_def.png",
+                "assets/images/stages/buttons/easy_btn_hover.png", btnX, ScreenUtils.scaleY(320), btnWidth, btnHeight);
+        JButton normalBtn = createImageButton("assets/images/stages/buttons/normal_btn_def.png",
+                "assets/images/stages/buttons/normal_btn_hover.png", btnX, ScreenUtils.scaleY(500), btnWidth, btnHeight);
+        JButton hardBtn = createImageButton("assets/images/stages/buttons/hard_btn_def.png",
+                "assets/images/stages/buttons/hard_btn_hover.png", btnX, ScreenUtils.scaleY(680), btnWidth, btnHeight);
         JButton backBtn = createImageButton("assets/images/buttons/back_btn_def.png",
                 "assets/images/buttons/back_btn_hover.png",
                 btnX, ScreenUtils.scaleY(860), btnWidth, btnHeight);
