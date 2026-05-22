@@ -39,10 +39,12 @@ public class codex extends BasePanel {
                 ScreenUtils.scaleY(750), backBtnWidth, backBtnHeight);
 
         enemiesBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Enemies info coming soon!");
+            App.getInstance().addPanel(new EnemyCodexPanel(username), "enemycodex");
+            App.getInstance().showPanel("enemycodex");
         });
         towersBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Towers info coming soon!");
+            App.getInstance().addPanel(new TowerCodexPanel(username), "towercodex");
+            App.getInstance().showPanel("towercodex");
         });
         backBtn.addActionListener(e -> {
             int unlockedStage = dbManager.getUnlockedStage(username);
