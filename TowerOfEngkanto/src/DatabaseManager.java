@@ -105,6 +105,38 @@ public class DatabaseManager {
         return 1;
     }
 
+    public java.util.List<String[]> getTopLeaderboard() {
+        java.util.List<String[]> results = new java.util.ArrayList<>();
+
+        try {
+            String query = "SELECT username, total_points, " +
+                    "MAX(stage_reached) as best_stage, " +
+                    "MAX(CASE WHEN difficulty='hard' THEN 3 " +
+                    "WHEN difficulty='normal' THEN 2 ELSE 1 END) as diff_rank, " +
+                    "MAX(difficulty) as best_difficulty, " +
+                    "MAX(date) as last_played " +
+                    "FROM leaderboard " +
+                    "GROUP BY username " +
+                    "ORDER BY total_points DESC " +
+                    "LIMIT 10";
+
+            PreparedStatement stmt = connection.prepareStatement(query);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                results.add(new String[] {
+                        rs.getString("username"),
+                        String.valueOf(rs.getInt("total_points")),
+                        String.valueOf(rs.getInt("best_stage")),
+                        rs.getString("best_difficulty"),
+                        rs.getString("last_played")
+                });
+            }
+        } catch (SQLException e) {
+            System.err.println("Leaderboard error: " + e.getMessage());
+        }
+        return results;
+    }
+
     public Connection getConnection() {
         return connection;
     }

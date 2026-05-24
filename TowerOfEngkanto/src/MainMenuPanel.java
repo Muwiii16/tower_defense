@@ -44,6 +44,11 @@ public class MainMenuPanel extends BasePanel {
             App.getInstance().showPanel("codex");
         });
 
+        ldbBtn.addActionListener(e -> {
+            App.getInstance().addPanel(new LeaderboardPanel(username), "leaderboard");
+            App.getInstance().showPanel("leaderboard");
+        });
+
         exitBtn.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
