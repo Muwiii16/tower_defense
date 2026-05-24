@@ -1,3 +1,6 @@
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+
 import javax.swing.*;
 
 public class codex extends BasePanel {
@@ -61,4 +64,11 @@ public class codex extends BasePanel {
         super("assets/images/background.png", username);
         this.dbManager = new DatabaseManager();
     }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        drawTitle((Graphics2D) g, "assets/images/titles/codex_title.png", ScreenUtils.scaleY(110));
+    }
+
 }

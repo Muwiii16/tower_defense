@@ -24,11 +24,12 @@ public class DifficultySelectPanel extends BasePanel {
         int btnX = (ScreenUtils.WIDTH - btnWidth) / 2;
 
         JButton easyBtn = createImageButton("assets/images/stages/buttons/easy_btn_def.png",
-                "assets/images/stages/buttons/easy_btn_hover.png", btnX, ScreenUtils.scaleY(320), btnWidth, btnHeight);
+                "assets/images/stages/buttons/easy_btn_hover.png", btnX, ScreenUtils.scaleY(200), btnWidth, btnHeight);
         JButton normalBtn = createImageButton("assets/images/stages/buttons/normal_btn_def.png",
-                "assets/images/stages/buttons/normal_btn_hover.png", btnX, ScreenUtils.scaleY(500), btnWidth, btnHeight);
+                "assets/images/stages/buttons/normal_btn_hover.png", btnX, ScreenUtils.scaleY(400), btnWidth,
+                btnHeight);
         JButton hardBtn = createImageButton("assets/images/stages/buttons/hard_btn_def.png",
-                "assets/images/stages/buttons/hard_btn_hover.png", btnX, ScreenUtils.scaleY(680), btnWidth, btnHeight);
+                "assets/images/stages/buttons/hard_btn_hover.png", btnX, ScreenUtils.scaleY(600), btnWidth, btnHeight);
         JButton backBtn = createImageButton("assets/images/buttons/back_btn_def.png",
                 "assets/images/buttons/back_btn_hover.png",
                 btnX, ScreenUtils.scaleY(860), btnWidth, btnHeight);
@@ -68,6 +69,6 @@ public class DifficultySelectPanel extends BasePanel {
         FontMetrics fm = g2d.getFontMetrics();
         int sx = (getWidth() - fm.stringWidth(sub)) / 2;
         g2d.setColor(new Color(200, 200, 200, 200));
-        g2d.drawString(sub, sx, ScreenUtils.scaleY(210));
+        g2d.drawString(sub, sx, ScreenUtils.scaleY(150));
     }
 }

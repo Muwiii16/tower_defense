@@ -22,20 +22,20 @@ public class StageSelectPanel extends BasePanel {
         int btnX = (ScreenUtils.WIDTH - btnWidth) / 2;
 
         JButton stage1Btn = createImageButton("assets/images/stages/buttons/stg1_btn_def.png",
-                "assets/images/stages/buttons/stg1_btn_hover.png", btnX, ScreenUtils.scaleY(300),
+                "assets/images/stages/buttons/stg1_btn_hover.png", btnX, ScreenUtils.scaleY(200),
                 btnWidth, btnHeight);
         JButton stage2Btn = unlockedStage >= 2
                 ? createImageButton("assets/images/stages/buttons/stg2_btn_def.png",
                         "assets/images/stages/buttons/stg2_btn_hover.png",
-                        btnX, ScreenUtils.scaleY(500), btnWidth, btnHeight)
+                        btnX, ScreenUtils.scaleY(400), btnWidth, btnHeight)
                 : createFadeButton("assets/images/stages/buttons/stg2_btn_lck.png",
-                        btnX, ScreenUtils.scaleY(500), btnWidth, btnHeight);
+                        btnX, ScreenUtils.scaleY(400), btnWidth, btnHeight);
         JButton stage3Btn = unlockedStage >= 3
                 ? createImageButton("assets/images/stages/buttons/stg3_btn_def.png",
                         "assets/images/stages/buttons/stg3_btn_hover.png",
-                        btnX, ScreenUtils.scaleY(700), btnWidth, btnHeight)
+                        btnX, ScreenUtils.scaleY(600), btnWidth, btnHeight)
                 : createFadeButton("assets/images/stages/buttons/stg3_btn_lck.png",
-                        btnX, ScreenUtils.scaleY(700), btnWidth, btnHeight);
+                        btnX, ScreenUtils.scaleY(600), btnWidth, btnHeight);
         JButton backBtn = createImageButton("assets/images/buttons/back_btn_def.png",
                 "assets/images/buttons/back_btn_hover.png", btnX, ScreenUtils.scaleY(870),
                 btnWidth, btnHeight);

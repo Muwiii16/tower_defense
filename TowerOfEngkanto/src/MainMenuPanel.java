@@ -61,6 +61,7 @@ public class MainMenuPanel extends BasePanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        drawTitle((Graphics2D) g, "Tower of Engkanto", ScreenUtils.scaleY(155));
+        Graphics2D g2d = (Graphics2D) g;
+        drawTitle(g2d, "assets/images/titles/game_title.png", ScreenUtils.scaleY(150));
     }
 }

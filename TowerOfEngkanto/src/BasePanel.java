@@ -40,16 +40,14 @@ public abstract class BasePanel extends JPanel {
         g.fillRect(0, 0, getWidth(), getHeight());
     }
 
-    protected void drawTitle(Graphics2D g2d, String title, int y) {
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(80)));
-        FontMetrics fm = g2d.getFontMetrics();
-        int x = (getWidth() - fm.stringWidth(title)) / 2;
-        g2d.setColor(new Color(0, 0, 0, 180));
-        g2d.drawString(title, x + 2, y + 2);
-        g2d.setColor(new Color(220, 245, 255));
-        g2d.drawString(title, x, y);
+    protected void drawTitle(Graphics2D g2d, String titleImagePath, int y) {
+        BufferedImage titleImg = loadImage(titleImagePath);
+        if (titleImg != null) {
+            int imgWidth = ScreenUtils.scaleX(800);
+            int imgHeight = (int) (imgWidth * (titleImg.getHeight() / (double) titleImg.getWidth()));
+            int imgX = (ScreenUtils.WIDTH - imgWidth) / 2;
+            g2d.drawImage(titleImg, imgX, y - imgHeight / 2, imgWidth, imgHeight, null);
+        }
     }
 
     protected JButton createImageButton(String normalPath, String hoverPath, int x, int y, int width, int height) {
