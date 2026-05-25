@@ -1,3 +1,7 @@
+package menu;
+
+import app.*;
+import database.DatabaseManager;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 

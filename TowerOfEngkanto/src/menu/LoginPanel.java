@@ -1,3 +1,7 @@
+package menu;
+
+import app.*;
+import database.DatabaseManager;
 import javax.swing.*;
 import java.awt.*;
 

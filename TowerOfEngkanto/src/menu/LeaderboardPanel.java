@@ -1,6 +1,9 @@
+package menu;
+
+import app.*;
+import database.DatabaseManager;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.util.List;
 
 public class LeaderboardPanel extends BasePanel {

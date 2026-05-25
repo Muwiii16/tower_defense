@@ -1,3 +1,6 @@
+package app;
+
+import menu.LoginPanel;
 import javax.swing.*;
 import java.awt.*;
 
