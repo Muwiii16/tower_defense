@@ -1,6 +1,8 @@
 package menu;
 
 import app.*;
+import game.GamePanel;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -52,10 +54,9 @@ public class DifficultySelectPanel extends BasePanel {
     }
 
     private void startGame(String difficulty) {
-        // TODO: replace with actual game panel
-        System.out.println("Starting Stage " + stageNumber + " on " + difficulty);
-        JOptionPane.showMessageDialog(this,
-                "Starting Stage " + stageNumber + " - " + difficulty + "!\n(Game screen coming soon)");
+        App.getInstance().addPanel(
+                new GamePanel(username, stageNumber, difficulty), "game");
+        App.getInstance().showPanel("game");
     }
 
     @Override

@@ -139,6 +139,38 @@ public class DatabaseManager {
         return results;
     }
 
+    public void saveGameProgress(String username, int stageCompleted, String difficulty, int score) {
+        try {
+            // Update unlocked stage if new stage completed
+            String updateSave = "UPDATE game_saves SET " +
+                    "last_completed_stage = GREATEST(last_completed_stage, ?), " +
+                    "unlocked_stage = GREATEST(unlocked_stage, ?), " +
+                    "difficulty = ?, " +
+                    "total_points = total_points + ? " +
+                    "WHERE username = ?";
+            PreparedStatement stmt = connection.prepareStatement(updateSave);
+            stmt.setInt(1, stageCompleted);
+            stmt.setInt(2, Math.min(stageCompleted + 1, 3));
+            stmt.setString(3, difficulty);
+            stmt.setInt(4, score);
+            stmt.setString(5, username);
+            stmt.executeUpdate();
+
+            // Add to leaderboard
+            String insertLdb = "INSERT INTO leaderboard " +
+                    "(username, score, difficulty, stage_reached) VALUES (?, ?, ?, ?)";
+            PreparedStatement ldbStmt = connection.prepareStatement(insertLdb);
+            ldbStmt.setString(1, username);
+            ldbStmt.setInt(2, score);
+            ldbStmt.setString(3, difficulty);
+            ldbStmt.setInt(4, stageCompleted);
+            ldbStmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.err.println("Error saving progress: " + e.getMessage());
+        }
+    }
+
     public Connection getConnection() {
         return connection;
     }
