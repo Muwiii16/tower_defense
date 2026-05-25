@@ -12,21 +12,24 @@ import javax.imageio.ImageIO;
 public class GameMap {
 
     private BufferedImage mapImage;
+    private BufferedImage shrineImage;
     private int cellSize;
     private int cols;
     private int rows;
     private int mapWidth;
     private int mapHeight;
+    private int offsetY; // vertical offset for letterbox
     private boolean[][] pathCells; // true = path (no tower placement)
     private List<Point> waypoints; // pixel coordinates for enemy path
     private int stageNumber;
 
-    public GameMap(int stageNumber) {
+    public GameMap(int stageNumber, int mapWidth) {
         this.stageNumber = stageNumber;
-        this.cellSize = ScreenUtils.scaleX(70);
-        this.mapWidth = ScreenUtils.scaleX(1400);
-        this.mapHeight = ScreenUtils.scaleY(1080);
-        this.cols = mapWidth / cellSize;
+        this.mapWidth = mapWidth;
+        this.mapHeight = (int) (mapWidth * (941.0 / 1672.0));
+        this.offsetY = (ScreenUtils.HEIGHT - mapHeight) / 2;
+        this.cellSize = mapWidth / 20;
+        this.cols = 20;
         this.rows = mapHeight / cellSize;
         this.pathCells = new boolean[cols][rows];
         this.waypoints = new ArrayList<>();
@@ -36,10 +39,18 @@ public class GameMap {
     }
 
     private void loadMap() {
+        // Load map image
         try {
-            mapImage = ImageIO.read(new File("assets/images/maps/map" + stageNumber + ".png"));
+            mapImage = ImageIO.read(new File("assets/images/gameplay/maps/map" + stageNumber + ".png"));
         } catch (IOException e) {
             System.err.println("Could not load map: " + stageNumber);
+        }
+
+        // Load shrine image
+        try {
+            shrineImage = ImageIO.read(new File("assets/images/gameplay/shrine.png"));
+        } catch (IOException e) {
+            System.err.println("Could not load shrine image");
         }
     }
 
@@ -58,7 +69,6 @@ public class GameMap {
     }
 
     private void buildMap1Path() {
-        // Path waypoints from our grid analysis (col, row)
         int[][] gridPath = {
                 { 0, 8 }, { 1, 8 }, { 2, 8 }, { 3, 8 }, { 4, 8 }, { 5, 8 }, { 6, 8 }, { 7, 8 }, { 8, 8 },
                 { 9, 8 }, { 10, 8 }, { 11, 8 }, { 11, 7 }, { 11, 6 }, { 10, 6 }, { 9, 6 }, { 8, 6 },
@@ -69,17 +79,28 @@ public class GameMap {
         for (int[] cell : gridPath) {
             int col = cell[0];
             int row = cell[1];
-
-            // Mark as path cell
             if (col < cols && row < rows) {
                 pathCells[col][row] = true;
             }
-
-            // Convert to pixel center
             int px = col * cellSize + cellSize / 2;
-            int py = row * cellSize + cellSize / 2;
+            int py = row * cellSize + cellSize / 2 + offsetY;
             waypoints.add(new Point(px, py));
         }
+
+        // Blocked cells (water) — not path but also not placeable
+        int[][] blockedCells = {
+                { 0, 9 }, { 1, 9 }, { 2, 9 }, { 3, 9 }, { 4, 9 }, { 5, 9 }, { 6, 9 }, { 7, 9 }, { 8, 9 },
+                { 0, 10 }, { 1, 10 }, { 2, 10 }, { 3, 10 }, { 4, 10 }, { 5, 10 }, { 6, 10 }, { 7, 10 }, { 8, 10 },
+                { 9, 10 }
+        };
+        for (int[] cell : blockedCells) {
+            int col = cell[0];
+            int row = cell[1];
+            if (col < cols && row < rows) {
+                pathCells[col][row] = true; // mark as unavailable
+            }
+        }
+
     }
 
     private void buildMap2Path() {
@@ -91,29 +112,36 @@ public class GameMap {
     }
 
     public void draw(Graphics2D g2d) {
-        // Draw map image
+        // Black background for letterbox
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(0, 0, mapWidth, ScreenUtils.HEIGHT);
+
+        // Center map vertically
+        int offsetY = (ScreenUtils.HEIGHT - mapHeight) / 2;
+
         if (mapImage != null) {
-            g2d.drawImage(mapImage, 0, 0, mapWidth, mapHeight, null);
-        } else {
-            g2d.setColor(new Color(30, 30, 30));
-            g2d.fillRect(0, 0, mapWidth, mapHeight);
+            g2d.drawImage(mapImage, 0, offsetY, mapWidth, mapHeight, null);
         }
 
-        // Draw grid overlay (semi-transparent)
-        drawGrid(g2d);
+        // Draw shrine at last waypoint (13,0)
+        if (shrineImage != null) {
+            int shrineCol = 13;
+            int shrineRow = 0;
+            int sx = shrineCol * cellSize;
+            int sy = shrineRow * cellSize + offsetY;
+            g2d.drawImage(shrineImage, sx, sy, cellSize, cellSize, null); // ← cellSize x cellSize instead of cellSize*2
+        }
+
+        drawGrid(g2d, offsetY);
     }
 
-    private void drawGrid(Graphics2D g2d) {
+    private void drawGrid(Graphics2D g2d, int offsetY) {
         for (int col = 0; col < cols; col++) {
             for (int row = 0; row < rows; row++) {
                 int x = col * cellSize;
-                int y = row * cellSize;
+                int y = row * cellSize + offsetY;
 
-                if (pathCells[col][row]) {
-                    // Path cell — no placement allowed
-                    g2d.setColor(new Color(255, 0, 0, 0)); // invisible
-                } else {
-                    // Placeable cell — subtle highlight
+                if (!pathCells[col][row]) {
                     g2d.setColor(new Color(255, 255, 255, 15));
                     g2d.fillRect(x, y, cellSize, cellSize);
                     g2d.setColor(new Color(255, 255, 255, 30));
@@ -126,7 +154,7 @@ public class GameMap {
     // Highlight a cell when hovered
     public void drawHoverCell(Graphics2D g2d, int col, int row, boolean canPlace) {
         int x = col * cellSize;
-        int y = row * cellSize;
+        int y = row * cellSize + offsetY;
         if (canPlace) {
             g2d.setColor(new Color(0, 255, 0, 60));
             g2d.fillRect(x, y, cellSize, cellSize);
@@ -140,21 +168,20 @@ public class GameMap {
         }
     }
 
-    // Convert mouse pixel position to grid cell
     public Point pixelToCell(int px, int py) {
         int col = px / cellSize;
-        int row = py / cellSize;
+        int row = (py - offsetY) / cellSize; // ← subtract offsetY
         if (col >= 0 && col < cols && row >= 0 && row < rows) {
             return new Point(col, row);
         }
         return null;
     }
 
-    // Convert grid cell to pixel center
     public Point cellToPixel(int col, int row) {
         return new Point(
                 col * cellSize + cellSize / 2,
-                row * cellSize + cellSize / 2);
+                row * cellSize + cellSize / 2 + offsetY // ← add offsetY
+        );
     }
 
     // Check if a cell can have a tower placed on it
@@ -203,5 +230,9 @@ public class GameMap {
 
     public int getStageNumber() {
         return stageNumber;
+    }
+
+    public int getOffsetY() {
+        return offsetY;
     }
 }

@@ -63,16 +63,13 @@ public class DifficultySelectPanel extends BasePanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-
-        drawTitle(g2d, "SELECT DIFFICULTY", ScreenUtils.scaleY(150));
-
-        // Subtitle showing which stage was selected
-        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        drawTitle(g2d, "SELECT DIFFICULTY", ScreenUtils.scaleY(150), true);
+        // subtitle
         g2d.setFont(new Font("Serif", Font.PLAIN, ScreenUtils.scaleFont(36)));
         String sub = "Stage " + stageNumber;
         FontMetrics fm = g2d.getFontMetrics();
         int sx = (getWidth() - fm.stringWidth(sub)) / 2;
         g2d.setColor(new Color(200, 200, 200, 200));
-        g2d.drawString(sub, sx, ScreenUtils.scaleY(150));
+        g2d.drawString(sub, sx, ScreenUtils.scaleY(210));
     }
 }

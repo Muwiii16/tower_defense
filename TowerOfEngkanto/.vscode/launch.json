@@ -5,7 +5,7 @@
             "type": "java",
             "name": "Run Game",
             "request": "launch",
-            "mainClass": "App",
+            "mainClass": "app.App",
             "cwd": "${workspaceFolder}"
         }
     ]

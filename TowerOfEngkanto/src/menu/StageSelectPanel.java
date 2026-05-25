@@ -73,6 +73,6 @@ public class StageSelectPanel extends BasePanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        drawTitle((Graphics2D) g, "SELECT STAGE", ScreenUtils.scaleY(150));
+        drawTitle((Graphics2D) g, "SELECT STAGE", ScreenUtils.scaleY(150), true);
     }
 }

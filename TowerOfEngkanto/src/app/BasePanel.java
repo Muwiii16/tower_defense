@@ -17,11 +17,13 @@ public abstract class BasePanel extends JPanel {
         setDoubleBuffered(true);
         setPreferredSize(new Dimension(ScreenUtils.WIDTH, ScreenUtils.HEIGHT));
 
-        try {
-            backgroundImage = ImageIO.read(new File(backgroundPath));
-        } catch (IOException e) {
-            System.err.println("Could not load background: " + backgroundPath);
-            backgroundImage = null;
+        if (backgroundPath != null) { // ← add this check
+            try {
+                backgroundImage = ImageIO.read(new File(backgroundPath));
+            } catch (IOException e) {
+                System.err.println("Could not load background: " + backgroundPath);
+                backgroundImage = null;
+            }
         }
 
         initComponents();
@@ -50,6 +52,18 @@ public abstract class BasePanel extends JPanel {
             int imgX = (ScreenUtils.WIDTH - imgWidth) / 2;
             g2d.drawImage(titleImg, imgX, y - imgHeight / 2, imgWidth, imgHeight, null);
         }
+    }
+
+    protected void drawTitle(Graphics2D g2d, String text, int y, boolean isText) {
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(80)));
+        FontMetrics fm = g2d.getFontMetrics();
+        int x = (ScreenUtils.WIDTH - fm.stringWidth(text)) / 2;
+        g2d.setColor(new Color(0, 0, 0, 180));
+        g2d.drawString(text, x + 2, y + 2);
+        g2d.setColor(new Color(220, 245, 255));
+        g2d.drawString(text, x, y);
     }
 
     protected JButton createImageButton(String normalPath, String hoverPath, int x, int y, int width, int height) {
