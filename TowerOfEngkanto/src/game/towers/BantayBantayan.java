@@ -16,7 +16,7 @@ public class BantayBantayan extends Tower {
 
     public BantayBantayan(double x, double y) {
         super(x, y, 999, DAMAGE, RANGE, ATTACK_SPEED, COST, SPRITE_SIZE, FRAME_DELAY);
-        loadFrames("assets/images/towers/bantay", "bantay_", 4);
+        loadStance("assets/images/gameplay/bantay");
     }
 
     // Prioritize flying enemies first

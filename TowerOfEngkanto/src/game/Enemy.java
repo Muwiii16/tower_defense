@@ -17,6 +17,12 @@ public abstract class Enemy extends GameEntity {
     private boolean reachedEnd;
     private int spriteSize;
 
+    private BufferedImage[] downFrames;
+    private BufferedImage[] leftFrames;
+    private BufferedImage[] rightFrames;
+    private BufferedImage[] upFrames;
+    private String currentDirection = "D";
+
     public Enemy(double x, double y, int hp, double speed,
             int reward, int damage, int frameDelay,
             List<Point> waypoints, int spriteSize) {
@@ -30,24 +36,36 @@ public abstract class Enemy extends GameEntity {
         this.spriteSize = spriteSize;
     }
 
-    protected void loadFrames(String folderPath, String prefix, int frameCount) {
-        BufferedImage[] frames = new BufferedImage[frameCount];
-        for (int i = 0; i < frameCount; i++) {
+    protected void loadDirectionalFrames(String folderPath, String prefix) {
+        // Load 3 frames for each of 4 directions
+        downFrames = loadFrameSet(folderPath, prefix + "_D", 3);
+        leftFrames = loadFrameSet(folderPath, prefix + "_L", 3);
+        rightFrames = loadFrameSet(folderPath, prefix + "_R", 3);
+        upFrames = loadFrameSet(folderPath, prefix + "_U", 3);
+
+        // Default to down frames
+        setFrames(downFrames);
+    }
+
+    private BufferedImage[] loadFrameSet(String folder, String prefix, int count) {
+        BufferedImage[] frames = new BufferedImage[count];
+        for (int i = 0; i < count; i++) {
             try {
-                frames[i] = ImageIO.read(new File(folderPath + "/" + prefix + (i + 1) + ".png"));
+                frames[i] = ImageIO.read(new File(folder + "/" + prefix + (i + 1) + ".png"));
             } catch (IOException e) {
-                System.err.println("Could not load frame: " + prefix + (i + 1) + ".png");
+                System.err.println("Could not load: " + prefix + (i + 1) + ".png");
             }
         }
-        setFrames(frames);
+        return frames;
     }
 
     @Override
-    public void update() {
+    public Projectile update() {
         if (!isAlive() || reachedEnd)
-            return;
+            return null;
         moveAlongPath();
         updateAnimation();
+        return null;
     }
 
     private void moveAlongPath() {
@@ -60,20 +78,46 @@ public abstract class Enemy extends GameEntity {
         Point target = waypoints.get(currentWaypoint);
         double tx = target.x;
         double ty = target.y;
-
         double dx = tx - getX();
         double dy = ty - getY();
         double dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= speed) {
+        updateDirection(dx, dy); // ← add this
 
+        if (dist <= speed) {
             setX(tx);
             setY(ty);
             currentWaypoint++;
         } else {
-
             setX(getX() + (dx / dist) * speed);
             setY(getY() + (dy / dist) * speed);
+        }
+    }
+
+    private void updateDirection(double dx, double dy) {
+        String newDir;
+        if (Math.abs(dx) > Math.abs(dy)) {
+            newDir = dx > 0 ? "R" : "L";
+        } else {
+            newDir = dy > 0 ? "D" : "U";
+        }
+
+        if (!newDir.equals(currentDirection)) {
+            currentDirection = newDir;
+            switch (currentDirection) {
+                case "D":
+                    setFrames(downFrames);
+                    break;
+                case "L":
+                    setFrames(leftFrames);
+                    break;
+                case "R":
+                    setFrames(rightFrames);
+                    break;
+                case "U":
+                    setFrames(upFrames);
+                    break;
+            }
         }
     }
 

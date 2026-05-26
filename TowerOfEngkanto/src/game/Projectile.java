@@ -37,28 +37,34 @@ public abstract class Projectile extends GameEntity {
     }
 
     @Override
-    public void update() {
+    public Projectile update() {
         if (!isAlive())
-            return;
+            return null;
 
-        setX(getX() + speedX);
-        setY(getY() + speedY);
-        updateAnimation();
+        if (!target.isAlive()) {
+            setAlive(false);
+            return null;
+        }
 
-        // Check if hit target
+        // Re-calculate direction towards target every tick (homing)
         double dx = target.getX() - getX();
         double dy = target.getY() - getY();
         double dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= 15) {
+        double projectileSpeed = Math.sqrt(speedX * speedX + speedY * speedY);
+
+        if (dist <= projectileSpeed) {
+            setX(target.getX());
+            setY(target.getY());
             onHit();
             setAlive(false);
+        } else {
+            setX(getX() + (dx / dist) * projectileSpeed);
+            setY(getY() + (dy / dist) * projectileSpeed);
         }
 
-        // Also die if target is already dead
-        if (!target.isAlive()) {
-            setAlive(false);
-        }
+        updateAnimation();
+        return null;
     }
 
     // Called when projectile hits — subclasses define what happens

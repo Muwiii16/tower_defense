@@ -15,7 +15,7 @@ public class Mandirigma extends Tower {
 
     public Mandirigma(double x, double y) {
         super(x, y, 999, DAMAGE, RANGE, ATTACK_SPEED, COST, SPRITE_SIZE, FRAME_DELAY);
-        loadFrames("assets/images/towers/mandirigma", "mandirigma_", 4);
+        loadStance("assets/images/gameplay/mandirigma");
     }
 
     // Prioritize first enemy on path (highest waypoint index)

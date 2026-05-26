@@ -11,9 +11,9 @@ public class LantakaProjectile extends Projectile {
 
     public LantakaProjectile(double x, double y, Enemy target,
             int damage, double aoeRadius) {
-        super(x, y, target, damage, 4.0, 20, true, aoeRadius, 2);
+        super(x, y, target, damage, 10.0, 20, true, aoeRadius, 2);
         this.aoeRadius = aoeRadius;
-        loadSprite("assets/images/projectiles/cannonball.png");
+        loadSprite("assets/images/gameplay/lantaka/projectile.png");
     }
 
     public void setAllEnemies(List<Enemy> enemies) {

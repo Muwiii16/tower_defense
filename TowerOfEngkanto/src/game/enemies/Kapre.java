@@ -1,6 +1,8 @@
 package game.enemies;
 
 import game.Enemy;
+import game.Projectile;
+
 import java.awt.Point;
 import java.util.List;
 
@@ -21,7 +23,7 @@ public class Kapre extends Enemy {
                 FRAME_DELAY, waypoints, SPRITE_SIZE);
         this.immuneToSlow = true;
         this.immuneToStun = true;
-        loadFrames("assets/images/enemies/kapre", "kapre_", 4);
+        loadDirectionalFrames("assets/images/gameplay/Kapre", "Kapre");
     }
 
     private static int scaleHp(String difficulty) {
@@ -43,8 +45,8 @@ public class Kapre extends Enemy {
     }
 
     @Override
-    public void update() {
-        super.update(); // uses Enemy's movement logic
+    public Projectile update() {
+        return super.update();
     }
 
     public boolean isImmuneToSlow() {

@@ -16,7 +16,7 @@ public class LantakaCannon extends Tower {
 
     public LantakaCannon(double x, double y) {
         super(x, y, 999, DAMAGE, RANGE, ATTACK_SPEED, COST, SPRITE_SIZE, FRAME_DELAY);
-        loadFrames("assets/images/towers/lantaka", "lantaka_", 4);
+        loadStance("assets/images/gameplay/lantaka");
     }
 
     // Prioritize strongest enemy (most HP)

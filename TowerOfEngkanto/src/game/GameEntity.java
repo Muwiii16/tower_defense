@@ -26,7 +26,7 @@ public abstract class GameEntity {
         this.frameDelay = frameDelay;
     }
 
-    public abstract void update();
+    public abstract Projectile update();
 
     public abstract void draw(Graphics2D g2d);
 

@@ -32,31 +32,27 @@ public abstract class Tower extends GameEntity {
     }
 
     // Load animation frames
-    protected void loadFrames(String folderPath, String prefix, int frameCount) {
-        BufferedImage[] frames = new BufferedImage[frameCount];
-        for (int i = 0; i < frameCount; i++) {
-            try {
-                frames[i] = ImageIO.read(new File(folderPath + "/" + prefix + (i + 1) + ".png"));
-            } catch (IOException e) {
-                System.err.println("Could not load frame: " + prefix + (i + 1) + ".png");
-            }
+    protected void loadStance(String folderPath) {
+        try {
+            BufferedImage stance = ImageIO.read(new File(folderPath + "/stance.png"));
+            setFrames(new BufferedImage[] { stance });
+        } catch (IOException e) {
+            System.err.println("Could not load stance: " + folderPath);
         }
-        setFrames(frames);
     }
 
     @Override
-    public void update() {
+    public Projectile update() {
         updateAnimation();
         if (target != null && (!target.isAlive() || !isInRange(target))) {
             target = null;
         }
         attackTimer++;
-        if (attackTimer >= attackSpeed) {
+        if (attackTimer >= attackSpeed && target != null) {
             attackTimer = 0;
-            if (target != null) {
-                attack(target);
-            }
+            return attack(target); // ← only fires when cooldown is ready
         }
+        return null;
     }
 
     // Find closest enemy in range from list

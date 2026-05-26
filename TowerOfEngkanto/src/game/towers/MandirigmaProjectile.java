@@ -6,8 +6,8 @@ import game.Projectile;
 public class MandirigmaProjectile extends Projectile {
 
     public MandirigmaProjectile(double x, double y, Enemy target, int damage) {
-        super(x, y, target, damage, 6.0, 16, false, 0, 2);
-        loadSprite("assets/images/projectiles/spear.png");
+        super(x, y, target, damage, 12.0, 16, false, 0, 2);
+        loadSprite("assets/images/gameplay/mandirigma/projectile.png");
     }
 
     @Override

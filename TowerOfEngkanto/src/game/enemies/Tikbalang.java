@@ -1,6 +1,8 @@
 package game.enemies;
 
 import game.Enemy;
+import game.Projectile;
+
 import java.awt.Point;
 import java.util.List;
 import java.util.Random;
@@ -21,7 +23,7 @@ public class Tikbalang extends Enemy {
         super(x, y, scaleHp(difficulty), scaleSpeed(difficulty), REWARD, DAMAGE,
                 FRAME_DELAY, waypoints, SPRITE_SIZE);
         this.random = new Random();
-        loadFrames("assets/images/enemies/tikbalang", "tikbalang_", 4);
+        loadDirectionalFrames("assets/images/gameplay/Tikbalang", "Tikbalang");
     }
 
     private static int scaleHp(String difficulty) {
@@ -52,7 +54,7 @@ public class Tikbalang extends Enemy {
     }
 
     @Override
-    public void update() {
-        super.update();
+    public Projectile update() {
+        return super.update();
     }
 }

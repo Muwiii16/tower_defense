@@ -2,38 +2,57 @@ package game;
 
 import app.*;
 import database.DatabaseManager;
+import game.enemies.*;
+import game.towers.*;
 import menu.MainMenuPanel;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class GamePanel extends BasePanel {
 
+    // Game state
     private int stageNumber;
     private String difficulty;
     private int gold;
     private int lives;
     private int score;
-    private int currentWave;
-    private int totalWaves;
+    private boolean gameOver;
+    private boolean gameWon;
 
+    // Sidebar constants
+    private static final int SIDEBAR_WIDTH = ScreenUtils.scaleX(520);
+    private static final int MAP_WIDTH = ScreenUtils.WIDTH - SIDEBAR_WIDTH;
+
+    // Game objects
+    private GameMap gameMap;
+    private WaveManager waveManager;
+    private List<Enemy> enemies;
+    private List<Tower> towers;
+    private List<Projectile> projectiles;
+    private boolean[][] occupiedCells;
+
+    // Tower placement
+    private String selectedTowerType;
+    private int hoverCol = -1;
+    private int hoverRow = -1;
+
+    // Sidebar images
     private BufferedImage mandirigmaImg;
     private BufferedImage lantakaImg;
     private BufferedImage bantayImg;
 
+    // Stage info
     private static final String[] STAGE_NAMES = {
             "", "Gubat ng mga Nilalang", "Bundok ng Sumpa", "Tore ng Engkanto"
     };
 
-    private static final int SIDEBAR_WIDTH = ScreenUtils.scaleX(520);
-    private static final int MAP_WIDTH = ScreenUtils.WIDTH - SIDEBAR_WIDTH;
-
-    private GameMap gameMap;
+    // Game loop
     private Timer gameTimer;
     private DatabaseManager dbManager;
 
@@ -42,8 +61,6 @@ public class GamePanel extends BasePanel {
         this.stageNumber = stageNumber;
         this.difficulty = difficulty;
         this.dbManager = new DatabaseManager();
-
-        // Re-run init now that fields are set
         removeAll();
         initComponents();
     }
@@ -58,6 +75,7 @@ public class GamePanel extends BasePanel {
         if (difficulty == null)
             return;
 
+        // Init stats
         switch (difficulty) {
             case "easy":
                 gold = 250;
@@ -73,125 +91,399 @@ public class GamePanel extends BasePanel {
                 break;
         }
         score = 0;
-        currentWave = 0;
-        totalWaves = 5;
+        gameOver = false;
+        gameWon = false;
 
+        // Init collections
+        enemies = new ArrayList<>();
+        towers = new ArrayList<>();
+        projectiles = new ArrayList<>();
         gameMap = new GameMap(stageNumber, MAP_WIDTH);
+        occupiedCells = new boolean[gameMap.getCols()][gameMap.getRows()];
+        waveManager = new WaveManager(stageNumber, difficulty,
+                gameMap.getWaypoints(), enemies);
 
+        // Load sidebar images
         mandirigmaImg = loadImage("assets/images/enemies_towers/mandirigma.png");
         lantakaImg = loadImage("assets/images/enemies_towers/lantaka_cannon.png");
         bantayImg = loadImage("assets/images/enemies_towers/bantay.png");
 
-        // Game loop
-        gameTimer = new Timer(16, e -> repaint());
+        // Mouse click — tower placement + wave button
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON3) {
+                    selectedTowerType = null;
+                    return;
+                }
+
+                // Check start wave button
+                int btnX = MAP_WIDTH + ScreenUtils.scaleX(20);
+                int btnY = ScreenUtils.scaleY(800);
+                int btnW = SIDEBAR_WIDTH - ScreenUtils.scaleX(40);
+                int btnH = ScreenUtils.scaleY(80);
+                if (e.getX() >= btnX && e.getX() <= btnX + btnW &&
+                        e.getY() >= btnY && e.getY() <= btnY + btnH) {
+                    waveManager.startNextWave();
+                    return;
+                }
+
+                // Check back to menu click
+                if (e.getX() >= MAP_WIDTH + ScreenUtils.scaleX(20) &&
+                        e.getY() >= ScreenUtils.scaleY(960)) {
+                    returnToMainMenu();
+                    return;
+                }
+
+                // Check sidebar tower selection
+                if (e.getX() >= MAP_WIDTH) {
+                    handleSidebarClick(e.getX(), e.getY());
+                    return;
+                }
+
+                // Place tower on map
+                handleMapClick(e.getX(), e.getY());
+            }
+        });
+
+        // Mouse hover
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                if (e.getX() >= MAP_WIDTH) {
+                    hoverCol = -1;
+                    hoverRow = -1;
+                    return;
+                }
+                Point cell = gameMap.pixelToCell(e.getX(), e.getY());
+                if (cell != null) {
+                    hoverCol = cell.x;
+                    hoverRow = cell.y;
+                }
+            }
+        });
+
+        // Game loop 60fps
+        gameTimer = new Timer(16, e -> {
+            if (!gameOver && !gameWon)
+                update();
+            repaint();
+        });
         gameTimer.start();
     }
+
+    // ── Game Loop ──────────────────────────────────────
+
+    private void update() {
+        waveManager.update();
+        updateEnemies();
+        updateTowers();
+        updateProjectiles();
+        checkWaveCleared();
+        checkGameOver();
+    }
+
+    private void updateEnemies() {
+        for (Enemy e : enemies) {
+            e.update();
+            if (e.hasReachedEnd()) {
+                lives -= e.getDamage();
+                e.setAlive(false);
+            }
+        }
+        enemies.removeIf(e -> !e.isAlive());
+    }
+
+    private void updateTowers() {
+        for (Tower t : towers) {
+            t.findTarget(enemies);
+            Projectile p = t.update(); // ← update returns projectile when ready
+            if (p != null) {
+                if (p instanceof LantakaProjectile) {
+                    ((LantakaProjectile) p).setAllEnemies(enemies);
+                }
+                projectiles.add(p);
+            }
+        }
+    }
+
+    private void updateProjectiles() {
+        Iterator<Projectile> it = projectiles.iterator();
+        while (it.hasNext()) {
+            Projectile p = it.next();
+            p.update();
+            if (!p.isAlive()) {
+                // Award gold if enemy killed
+                if (p.getTarget() != null && !p.getTarget().isAlive()) {
+                    gold += p.getTarget().getReward();
+                    score += getScoreForEnemy(p.getTarget());
+                }
+                it.remove();
+            }
+        }
+    }
+
+    private int getScoreForEnemy(Enemy e) {
+        int base = e.getReward() * 10;
+        if (difficulty.equals("hard"))
+            return (int) (base * 1.5);
+        if (difficulty.equals("easy"))
+            return (int) (base * 0.8);
+        return base;
+    }
+
+    private void checkWaveCleared() {
+        if (waveManager.isAllWavesComplete() && enemies.isEmpty()) {
+            gameWon = true;
+            gameTimer.stop();
+            SwingUtilities.invokeLater(this::showVictoryDialog);
+        }
+    }
+
+    private void checkGameOver() {
+        if (lives <= 0) {
+            lives = 0;
+            gameOver = true;
+            gameTimer.stop();
+            SwingUtilities.invokeLater(this::showGameOverDialog);
+        }
+    }
+
+    private void showVictoryDialog() {
+        dbManager.saveGameProgress(username, stageNumber, difficulty, score);
+        JOptionPane.showMessageDialog(this,
+                "Stage " + stageNumber + " Cleared!\nScore: " + score +
+                        "\nLives remaining: " + lives,
+                "Victory!", JOptionPane.INFORMATION_MESSAGE);
+        returnToMainMenu();
+    }
+
+    private void showGameOverDialog() {
+        JOptionPane.showMessageDialog(this,
+                "Game Over!\nScore: " + score, "Game Over", JOptionPane.ERROR_MESSAGE);
+        returnToMainMenu();
+    }
+
+    private void returnToMainMenu() {
+        gameTimer.stop();
+        int unlockedStage = dbManager.getUnlockedStage(username);
+        App.getInstance().addPanel(new MainMenuPanel(username, unlockedStage), "mainmenu");
+        App.getInstance().showPanel("mainmenu");
+    }
+
+    // ── Input ──────────────────────────────────────────
+
+    private void handleSidebarClick(int mx, int my) {
+        int x = MAP_WIDTH + ScreenUtils.scaleX(20);
+        int btnH = ScreenUtils.scaleY(110);
+        int startY = ScreenUtils.scaleY(270);
+        int spacing = ScreenUtils.scaleY(140);
+
+        if (mx >= x && mx <= MAP_WIDTH + SIDEBAR_WIDTH - ScreenUtils.scaleX(20)) {
+            if (my >= startY && my <= startY + btnH)
+                selectedTowerType = "mandirigma";
+            else if (my >= startY + spacing && my <= startY + spacing + btnH)
+                selectedTowerType = "lantaka";
+            else if (my >= startY + spacing * 2 && my <= startY + spacing * 2 + btnH)
+                selectedTowerType = "bantay";
+        }
+    }
+
+    private void handleMapClick(int mx, int my) {
+        if (selectedTowerType == null)
+            return;
+        Point cell = gameMap.pixelToCell(mx, my);
+        if (cell == null)
+            return;
+
+        int col = cell.x, row = cell.y;
+        if (!gameMap.canPlaceTower(col, row, occupiedCells))
+            return;
+
+        Tower tower = createTower(selectedTowerType, col, row);
+        if (tower == null)
+            return;
+
+        if (gold < tower.getCost()) {
+            JOptionPane.showMessageDialog(this, "Not enough gold!",
+                    "Insufficient Funds", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        gold -= tower.getCost();
+        occupiedCells[col][row] = true;
+        towers.add(tower);
+        selectedTowerType = null;
+    }
+
+    private Tower createTower(String type, int col, int row) {
+        Point pixel = gameMap.cellToPixel(col, row);
+        switch (type) {
+            case "mandirigma":
+                return new Mandirigma(pixel.x, pixel.y);
+            case "lantaka":
+                return new LantakaCannon(pixel.x, pixel.y);
+            case "bantay":
+                return new BantayBantayan(pixel.x, pixel.y);
+            default:
+                return null;
+        }
+    }
+
+    // ── Drawing ────────────────────────────────────────
 
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Draw map
         gameMap.draw(g2d);
-
         drawStageInfo(g2d);
 
-        // Draw sidebar
-        drawSidebar(g2d);
+        // Hover highlight
+        if (hoverCol >= 0 && selectedTowerType != null) {
+            boolean canPlace = gameMap.canPlaceTower(hoverCol, hoverRow, occupiedCells);
+            gameMap.drawHoverCell(g2d, hoverCol, hoverRow, canPlace);
+        }
 
+        // Draw towers
+        for (Tower t : towers)
+            t.draw(g2d);
+
+        // Draw enemies
+        for (Enemy e : enemies)
+            e.draw(g2d);
+
+        // Draw projectiles
+        for (Projectile p : projectiles)
+            p.draw(g2d);
+
+        drawSidebar(g2d);
         g2d.dispose();
+    }
+
+    private void drawStageInfo(Graphics2D g2d) {
+        int barHeight = gameMap.getOffsetY();
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(0, 0, MAP_WIDTH, barHeight);
+
+        g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(28)));
+        g2d.setColor(new Color(180, 140, 40));
+        g2d.drawString("STAGE " + stageNumber,
+                ScreenUtils.scaleX(20), barHeight - ScreenUtils.scaleY(35));
+
+        g2d.setFont(new Font("Serif", Font.ITALIC, ScreenUtils.scaleFont(22)));
+        g2d.setColor(new Color(200, 180, 120));
+        g2d.drawString(STAGE_NAMES[stageNumber],
+                ScreenUtils.scaleX(20), barHeight - ScreenUtils.scaleY(10));
+
+        Color diffColor;
+        switch (difficulty) {
+            case "easy":
+                diffColor = new Color(80, 200, 80);
+                break;
+            case "hard":
+                diffColor = new Color(220, 60, 60);
+                break;
+            default:
+                diffColor = new Color(220, 180, 60);
+                break;
+        }
+        g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(22)));
+        g2d.setColor(diffColor);
+        String diff = difficulty.substring(0, 1).toUpperCase() + difficulty.substring(1);
+        String label = "[ " + diff + " ]";
+        FontMetrics fm = g2d.getFontMetrics();
+        g2d.drawString(label,
+                MAP_WIDTH - fm.stringWidth(label) - ScreenUtils.scaleX(20),
+                barHeight - ScreenUtils.scaleY(20));
     }
 
     private void drawSidebar(Graphics2D g2d) {
         int sx = MAP_WIDTH;
 
-        // Background
         g2d.setColor(new Color(15, 10, 5, 230));
         g2d.fillRect(sx, 0, SIDEBAR_WIDTH, ScreenUtils.HEIGHT);
 
-        // Left border
         g2d.setColor(new Color(180, 140, 40));
         g2d.setStroke(new BasicStroke(2));
         g2d.drawLine(sx, 0, sx, ScreenUtils.HEIGHT);
 
-        // Wave
         g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(22)));
         g2d.setColor(new Color(220, 180, 60));
-        g2d.drawString("Wave: " + currentWave + "/" + totalWaves,
+        g2d.drawString("Wave: " + waveManager.getCurrentWave()
+                + "/" + waveManager.getTotalWaves(),
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(60));
 
-        // Lives
         g2d.setColor(new Color(220, 80, 80));
         g2d.drawString("Lives: " + lives,
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(100));
 
-        // Gold
         g2d.setColor(new Color(255, 210, 60));
         g2d.drawString("Gold: " + gold,
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(140));
 
-        // Score
         g2d.setColor(new Color(180, 220, 140));
         g2d.drawString("Score: " + score,
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(180));
 
-        // Divider
         g2d.setColor(new Color(180, 140, 40, 120));
         g2d.fillRect(sx + ScreenUtils.scaleX(10), ScreenUtils.scaleY(200),
                 SIDEBAR_WIDTH - ScreenUtils.scaleX(20), 2);
 
-        // Towers label
         g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(18)));
         g2d.setColor(new Color(200, 200, 200));
-        g2d.drawString("TOWERS", sx + ScreenUtils.scaleX(20),
-                ScreenUtils.scaleY(250));
+        g2d.drawString("TOWERS", sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(250));
 
-        // Tower placeholders
-        drawTowerSlot(g2d, mandirigmaImg, "Mandirigma", "Cost: 75g", sx, ScreenUtils.scaleY(270));
-        drawTowerSlot(g2d, lantakaImg, "Lantaka Cannon", "Cost: 150g", sx, ScreenUtils.scaleY(410));
-        drawTowerSlot(g2d, bantayImg, "Bantay-Bantayan", "Cost: 100g", sx, ScreenUtils.scaleY(550));
+        drawTowerSlot(g2d, mandirigmaImg, "Mandirigma",
+                "Cost: 75g", sx, ScreenUtils.scaleY(270), "mandirigma");
+        drawTowerSlot(g2d, lantakaImg, "Lantaka Cannon",
+                "Cost: 150g", sx, ScreenUtils.scaleY(410), "lantaka");
+        drawTowerSlot(g2d, bantayImg, "Bantay-Bantayan",
+                "Cost: 100g", sx, ScreenUtils.scaleY(550), "bantay");
 
-        // Start wave button
         drawStartWaveButton(g2d, sx);
 
-        // Back button (temp)
+        // Selected tower hint
+        if (selectedTowerType != null) {
+            g2d.setFont(new Font("SansSerif", Font.PLAIN, ScreenUtils.scaleFont(13)));
+            g2d.setColor(new Color(100, 220, 100));
+            g2d.drawString("Click map to place",
+                    sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(740));
+            g2d.drawString("Right-click to cancel",
+                    sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(760));
+        }
+
+        // Back to menu
         g2d.setFont(new Font("SansSerif", Font.PLAIN, ScreenUtils.scaleFont(14)));
         g2d.setColor(new Color(180, 100, 100));
         g2d.drawString("[ Back to Menu ]",
-                sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(980));
+                sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(970));
     }
 
-    private void drawTowerSlot(Graphics2D g2d, BufferedImage img, String name,
-            String cost, int sx, int y) {
+    private void drawTowerSlot(Graphics2D g2d, BufferedImage img,
+            String name, String cost, int sx, int y, String type) {
         int btnW = SIDEBAR_WIDTH - ScreenUtils.scaleX(40);
         int btnH = ScreenUtils.scaleY(110);
         int x = sx + ScreenUtils.scaleX(20);
 
-        // Background
-        g2d.setColor(new Color(25, 20, 10, 200));
+        boolean selected = type.equals(selectedTowerType);
+
+        g2d.setColor(selected ? new Color(60, 50, 20, 220)
+                : new Color(25, 20, 10, 200));
         g2d.fillRoundRect(x, y, btnW, btnH, 10, 10);
 
-        // Border
-        g2d.setColor(new Color(120, 90, 30, 150));
-        g2d.setStroke(new BasicStroke(1));
+        g2d.setColor(selected ? new Color(220, 180, 60)
+                : new Color(120, 90, 30, 150));
+        g2d.setStroke(new BasicStroke(selected ? 2 : 1));
         g2d.drawRoundRect(x, y, btnW, btnH, 10, 10);
 
-        // Image placeholder
         if (img != null) {
-            g2d.drawImage(img, x + ScreenUtils.scaleX(5), y + ScreenUtils.scaleY(10), ScreenUtils.scaleX(80),
-                    ScreenUtils.scaleY(80), null);
-        } else {
-            g2d.setColor(new Color(60, 50, 30, 150));
-            g2d.fillRoundRect(x + ScreenUtils.scaleX(5),
+            g2d.drawImage(img, x + ScreenUtils.scaleX(5),
                     y + ScreenUtils.scaleY(10),
-                    ScreenUtils.scaleX(80), ScreenUtils.scaleY(80), 8, 8);
-            g2d.setColor(new Color(150, 120, 60, 150));
-            g2d.drawString("IMG", x + ScreenUtils.scaleX(22),
-                    y + ScreenUtils.scaleY(55));
+                    ScreenUtils.scaleX(80), ScreenUtils.scaleY(80), null);
         }
 
-        // Name and cost
         g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(16)));
         g2d.setColor(new Color(220, 200, 140));
         g2d.drawString(name, x + ScreenUtils.scaleX(100),
@@ -209,69 +501,30 @@ public class GamePanel extends BasePanel {
         int btnW = SIDEBAR_WIDTH - ScreenUtils.scaleX(40);
         int btnH = ScreenUtils.scaleY(80);
 
-        g2d.setColor(new Color(30, 80, 30, 220));
+        boolean canStart = !waveManager.isWaveInProgress()
+                && !waveManager.isAllWavesComplete()
+                && !gameOver && !gameWon;
+
+        g2d.setColor(canStart ? new Color(30, 80, 30, 220)
+                : new Color(40, 40, 40, 180));
         g2d.fillRoundRect(btnX, btnY, btnW, btnH, 15, 15);
-        g2d.setColor(new Color(80, 200, 80));
+
+        g2d.setColor(canStart ? new Color(80, 200, 80)
+                : new Color(100, 100, 100));
         g2d.setStroke(new BasicStroke(2));
         g2d.drawRoundRect(btnX, btnY, btnW, btnH, 15, 15);
 
         g2d.setFont(new Font("Serif", Font.BOLD, ScreenUtils.scaleFont(20)));
-        g2d.setColor(new Color(150, 255, 150));
-        String label = "▶  Start Wave 1";
+        g2d.setColor(canStart ? new Color(150, 255, 150)
+                : new Color(120, 120, 120));
+
+        String label = waveManager.isAllWavesComplete() ? "All Waves Done!"
+                : waveManager.isWaveInProgress() ? "Wave in Progress..."
+                        : "▶  Start Wave " + (waveManager.getCurrentWave() + 1);
+
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(label,
                 btnX + (btnW - fm.stringWidth(label)) / 2,
                 btnY + (btnH + fm.getAscent()) / 2 - 4);
-    }
-
-    private void drawStageInfo(Graphics2D g2d) {
-        int barHeight = gameMap.getOffsetY();
-        g2d.setColor(Color.BLACK);
-        g2d.fillRect(0, 0, MAP_WIDTH, barHeight);
-
-        // Stage number
-        g2d.setFont(loadGothicFont(28));
-        g2d.setColor(new Color(180, 140, 40));
-        g2d.drawString("STAGE " + stageNumber,
-                ScreenUtils.scaleX(20), barHeight - ScreenUtils.scaleY(35));
-
-        // Stage name
-        g2d.setFont(loadGothicFont(22));
-        g2d.setColor(new Color(200, 180, 120));
-        g2d.drawString(STAGE_NAMES[stageNumber],
-                ScreenUtils.scaleX(20), barHeight - ScreenUtils.scaleY(10));
-
-        // Difficulty — right aligned
-        Color diffColor;
-        switch (difficulty) {
-            case "easy":
-                diffColor = new Color(80, 200, 80);
-                break;
-            case "hard":
-                diffColor = new Color(220, 60, 60);
-                break;
-            default:
-                diffColor = new Color(220, 180, 60);
-                break;
-        }
-        g2d.setFont(loadGothicFont(22));
-        g2d.setColor(diffColor);
-        String diff = difficulty.substring(0, 1).toUpperCase() + difficulty.substring(1);
-        String label = "[ " + diff + " ]";
-        FontMetrics fm = g2d.getFontMetrics();
-        g2d.drawString(label,
-                MAP_WIDTH - fm.stringWidth(label) - ScreenUtils.scaleX(20),
-                barHeight - ScreenUtils.scaleY(20));
-    }
-
-    private Font loadGothicFont(float size) {
-        try {
-            Font font = Font.createFont(Font.TRUETYPE_FONT,
-                    new File("assets/fonts/MedievalSharp.ttf"));
-            return font.deriveFont(Font.PLAIN, ScreenUtils.scaleFont((int) size));
-        } catch (Exception e) {
-            System.err.println("Could not load gothic font, using fallback");
-            return new Font("Serif", Font.BOLD, ScreenUtils.scaleFont((int) size));
-        }
     }
 }

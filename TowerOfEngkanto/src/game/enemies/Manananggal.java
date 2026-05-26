@@ -1,6 +1,8 @@
 package game.enemies;
 
 import game.Enemy;
+import game.Projectile;
+
 import java.awt.Point;
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class Manananggal extends Enemy {
         super(x, y, scaleHp(difficulty), scaleSpeed(difficulty), REWARD, DAMAGE,
                 FRAME_DELAY, waypoints, SPRITE_SIZE);
         this.isFlying = true;
-        loadFrames("assets/images/enemies/manananggal", "manananggal_", 4);
+        loadDirectionalFrames("assets/images/gameplay/Manananggal", "Manananggal");
     }
 
     private static int scaleHp(String difficulty) {
@@ -51,7 +53,7 @@ public class Manananggal extends Enemy {
     }
 
     @Override
-    public void update() {
-        super.update();
+    public Projectile update() {
+        return super.update();
     }
 }
