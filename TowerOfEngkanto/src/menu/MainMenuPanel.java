@@ -59,6 +59,11 @@ public class MainMenuPanel extends BasePanel {
                 System.exit(0);
         });
 
+        howToBtn.addActionListener(e -> {
+            App.getInstance().addPanel(new HowToPlayPanel(username), "howtoplay");
+            App.getInstance().showPanel("howtoplay");
+        });
+
         add(startBtn);
         add(howToBtn);
         add(codexBtn);
