@@ -153,6 +153,18 @@ public class GamePanel extends BasePanel {
                     return;
                 }
 
+                // Check pause button (upper-right of map area)
+                int pauseBtnSize = ScreenUtils.scaleX(44);
+                int pauseBtnX = MAP_WIDTH - pauseBtnSize - ScreenUtils.scaleX(12);
+                int pauseBtnY = ScreenUtils.scaleY(8);
+                if (e.getX() >= pauseBtnX && e.getX() <= pauseBtnX + pauseBtnSize &&
+                        e.getY() >= pauseBtnY && e.getY() <= pauseBtnY + pauseBtnSize) {
+                    paused = true;
+                    gameTimer.stop();
+                    showPauseMenu();
+                    return;
+                }
+
                 // Check back to menu click
                 if (e.getX() >= MAP_WIDTH + ScreenUtils.scaleX(20) &&
                         e.getY() >= ScreenUtils.scaleY(960)) {
@@ -190,18 +202,6 @@ public class GamePanel extends BasePanel {
             }
         });
 
-        setFocusable(true);
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    paused = true;
-                    gameTimer.stop(); // ← stop timer first
-                    showPauseMenu();
-                }
-            }
-        });
-
         // Game loop 60fps
         gameTimer = new Timer(16, e -> {
             if (!gameOver && !gameWon)
@@ -214,6 +214,14 @@ public class GamePanel extends BasePanel {
     // ── Game Loop ──────────────────────────────────────
 
     private void update() {
+        // Always check for win condition first
+        if (waveManager.isAllWavesComplete() && enemies.isEmpty()) {
+            gameWon = true;
+            gameTimer.stop();
+            SwingUtilities.invokeLater(this::showVictoryDialog);
+            return;
+        }
+
         // Prep phase countdown
         if (prepPhase) {
             prepTimer--;
@@ -300,15 +308,21 @@ public class GamePanel extends BasePanel {
     }
 
     private void checkWaveCleared() {
-        if (!waveManager.isWaveInProgress() && enemies.isEmpty()
-                && !waveManager.isAllWavesComplete() && !waitingForNextWave) {
-            waitingForNextWave = true;
-            waveDelayTimer = WAVE_DELAY_SECONDS * 60;
-        }
+        // If all waves spawned and all enemies dead — win immediately
         if (waveManager.isAllWavesComplete() && enemies.isEmpty()) {
             gameWon = true;
             gameTimer.stop();
             SwingUtilities.invokeLater(this::showVictoryDialog);
+            return;
+        }
+
+        // Between waves — start countdown only if not the last wave
+        boolean isLastWave = waveManager.getCurrentWave() >= waveManager.getTotalWaves();
+        if (!waveManager.isWaveInProgress() && enemies.isEmpty()
+                && !waveManager.isAllWavesComplete()
+                && !waitingForNextWave && !prepPhase && !isLastWave) {
+            waitingForNextWave = true;
+            waveDelayTimer = WAVE_DELAY_SECONDS * 60;
         }
     }
 
@@ -426,6 +440,7 @@ public class GamePanel extends BasePanel {
 
         gameMap.draw(g2d);
         drawStageInfo(g2d);
+        drawPauseButton(g2d);
 
         // Hover highlight
         if (hoverCol >= 0 && selectedTowerType != null) {
@@ -631,11 +646,6 @@ public class GamePanel extends BasePanel {
                     sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(760));
         }
 
-        // Back to menu
-        g2d.setFont(new Font("SansSerif", Font.PLAIN, ScreenUtils.scaleFont(13)));
-        g2d.setColor(new Color(150, 150, 150));
-        g2d.drawString("Press ESC to pause",
-                sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(970));
     }
 
     private void drawTowerSlot(Graphics2D g2d, BufferedImage img,
@@ -685,6 +695,34 @@ public class GamePanel extends BasePanel {
         }
     }
 
+    private void drawPauseButton(Graphics2D g2d) {
+        int size = ScreenUtils.scaleX(44);
+        int x = MAP_WIDTH - size - ScreenUtils.scaleX(12);
+        int y = ScreenUtils.scaleY(8);
+
+        // Button background
+        g2d.setColor(new Color(20, 15, 8, 200));
+        g2d.fillRoundRect(x, y, size, size, 10, 10);
+
+        // Border — gold tint
+        g2d.setColor(new Color(180, 140, 40, 200));
+        g2d.setStroke(new BasicStroke(1.5f));
+        g2d.drawRoundRect(x, y, size, size, 10, 10);
+
+        // Pause icon — two vertical bars
+        int barW = ScreenUtils.scaleX(5);
+        int barH = ScreenUtils.scaleY(18);
+        int barY = y + (size - barH) / 2;
+        int gap = ScreenUtils.scaleX(5);
+        int totalW = barW * 2 + gap;
+        int barX1 = x + (size - totalW) / 2;
+        int barX2 = barX1 + barW + gap;
+
+        g2d.setColor(new Color(220, 200, 140));
+        g2d.fillRoundRect(barX1, barY, barW, barH, 3, 3);
+        g2d.fillRoundRect(barX2, barY, barW, barH, 3, 3);
+    }
+
     private void drawStartWaveButton(Graphics2D g2d, int sx) {
         int btnX = sx + ScreenUtils.scaleX(20);
         int btnY = ScreenUtils.scaleY(800);
@@ -709,12 +747,12 @@ public class GamePanel extends BasePanel {
                 : new Color(120, 120, 120));
 
         String label;
-        if (prepPhase) {
+        if (waveManager.isAllWavesComplete()) {
+            label = "All Waves Done!";
+        } else if (prepPhase) {
             label = "Starting in " + (prepTimer / 60 + 1) + "s...";
         } else if (waitingForNextWave) {
             label = "Next wave in " + (waveDelayTimer / 60 + 1) + "s...";
-        } else if (waveManager.isAllWavesComplete()) {
-            label = "All Waves Done!";
         } else if (waveManager.isWaveInProgress()) {
             label = "Wave in Progress...";
         } else {

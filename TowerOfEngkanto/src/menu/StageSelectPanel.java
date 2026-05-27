@@ -1,6 +1,8 @@
 package menu;
 
 import app.*;
+import database.DatabaseManager;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -10,7 +12,15 @@ public class StageSelectPanel extends BasePanel {
 
     public StageSelectPanel(String username, int unlockedStage) {
         super("assets/images/background.png", username);
-        this.unlockedStage = unlockedStage;
+
+        DatabaseManager db = new DatabaseManager();
+        this.unlockedStage = db.getUnlockedStage(username);
+        System.out.println("Unlocked stage for " + username + ": " + this.unlockedStage);
+
+        initComponents();
+
+        revalidate();
+        repaint();
     }
 
     @Override
@@ -20,6 +30,7 @@ public class StageSelectPanel extends BasePanel {
 
     @Override
     protected void initComponents() {
+        this.removeAll();
         int btnWidth = ScreenUtils.scaleX(720);
         int btnHeight = ScreenUtils.scaleY(180);
         int btnX = (ScreenUtils.WIDTH - btnWidth) / 2;

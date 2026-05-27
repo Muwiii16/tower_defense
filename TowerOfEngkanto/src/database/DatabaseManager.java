@@ -137,33 +137,61 @@ public class DatabaseManager {
         return results;
     }
 
-    public void saveGameProgress(String username, int stageCompleted, String difficulty, int score) {
+    public void saveGameProgress(String username, int stageCompleted,
+            String difficulty, int score) {
         try {
-            System.out.println("Saving progress: " + username + " stage:" + stageCompleted + " score:" + score);
-            // Update unlocked stage if new stage completed
+            System.out.println("Saving progress: " + username +
+                    " stage:" + stageCompleted + " score:" + score);
+
+            // Update game_saves — unlock next stage
             String updateSave = "UPDATE game_saves SET " +
                     "last_completed_stage = GREATEST(last_completed_stage, ?), " +
                     "unlocked_stage = GREATEST(unlocked_stage, ?), " +
-                    "difficulty = ?, " +
-                    "total_points = total_points + ? " +
+                    "difficulty = ? " +
                     "WHERE username = ?";
             PreparedStatement stmt = connection.prepareStatement(updateSave);
             stmt.setInt(1, stageCompleted);
             stmt.setInt(2, Math.min(stageCompleted + 1, 3));
             stmt.setString(3, difficulty);
-            stmt.setInt(4, score);
-            stmt.setString(5, username);
+            stmt.setString(4, username);
             stmt.executeUpdate();
 
-            // Add to leaderboard
-            String insertLdb = "INSERT INTO leaderboard " +
-                    "(username, score, difficulty, stage_reached) VALUES (?, ?, ?, ?)";
-            PreparedStatement ldbStmt = connection.prepareStatement(insertLdb);
-            ldbStmt.setString(1, username);
-            ldbStmt.setInt(2, score);
-            ldbStmt.setString(3, difficulty);
-            ldbStmt.setInt(4, stageCompleted);
-            ldbStmt.executeUpdate();
+            // Check if a record already exists for this stage+difficulty
+            String checkQuery = "SELECT id, score FROM leaderboard " +
+                    "WHERE username = ? AND stage_reached = ? AND difficulty = ?";
+            PreparedStatement checkStmt = connection.prepareStatement(checkQuery);
+            checkStmt.setString(1, username);
+            checkStmt.setInt(2, stageCompleted);
+            checkStmt.setString(3, difficulty);
+            ResultSet rs = checkStmt.executeQuery();
+
+            if (rs.next()) {
+                // Record exists — only update if new score is higher
+                int existingScore = rs.getInt("score");
+                if (score > existingScore) {
+                    int id = rs.getInt("id");
+                    String updateLdb = "UPDATE leaderboard SET score = ?, date = CURRENT_TIMESTAMP " +
+                            "WHERE id = ?";
+                    PreparedStatement updateStmt = connection.prepareStatement(updateLdb);
+                    updateStmt.setInt(1, score);
+                    updateStmt.setInt(2, id);
+                    updateStmt.executeUpdate();
+                    System.out.println("Updated leaderboard with better score!");
+                } else {
+                    System.out.println("Existing score is better, not updating.");
+                }
+            } else {
+                // No record yet — insert new
+                String insertLdb = "INSERT INTO leaderboard " +
+                        "(username, score, difficulty, stage_reached) VALUES (?, ?, ?, ?)";
+                PreparedStatement insertStmt = connection.prepareStatement(insertLdb);
+                insertStmt.setString(1, username);
+                insertStmt.setInt(2, score);
+                insertStmt.setString(3, difficulty);
+                insertStmt.setInt(4, stageCompleted);
+                insertStmt.executeUpdate();
+                System.out.println("New leaderboard entry added!");
+            }
 
         } catch (SQLException e) {
             System.err.println("Error saving progress: " + e.getMessage());

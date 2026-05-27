@@ -52,6 +52,9 @@ public class WaveManager {
         } else {
             // All enemies spawned for this wave
             waveInProgress = false;
+            if (currentWave >= totalWaves) {
+                allWavesComplete = true;
+            }
         }
     }
 

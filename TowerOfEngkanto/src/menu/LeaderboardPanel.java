@@ -190,6 +190,6 @@ public class LeaderboardPanel extends BasePanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        drawTitle(g2d, "assets/images/titles/gothic_leaderboard_title.png", ScreenUtils.scaleY(120));
+        drawTitle(g2d, "assets/images/titles/ldb_title.png", ScreenUtils.scaleY(120));
     }
 }
