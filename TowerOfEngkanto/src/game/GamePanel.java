@@ -2,7 +2,6 @@ package game;
 
 import app.*;
 import database.DatabaseManager;
-import game.enemies.*;
 import game.towers.*;
 import menu.MainMenuPanel;
 
