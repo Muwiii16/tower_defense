@@ -109,9 +109,8 @@ public class DatabaseManager {
 
     public java.util.List<String[]> getTopLeaderboard() {
         java.util.List<String[]> results = new java.util.ArrayList<>();
-
         try {
-            String query = "SELECT username, total_points, " +
+            String query = "SELECT username, SUM(score) as total_points, " +
                     "MAX(stage_reached) as best_stage, " +
                     "MAX(CASE WHEN difficulty='hard' THEN 3 " +
                     "WHEN difficulty='normal' THEN 2 ELSE 1 END) as diff_rank, " +
@@ -121,7 +120,6 @@ public class DatabaseManager {
                     "GROUP BY username " +
                     "ORDER BY total_points DESC " +
                     "LIMIT 10";
-
             PreparedStatement stmt = connection.prepareStatement(query);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -141,6 +139,7 @@ public class DatabaseManager {
 
     public void saveGameProgress(String username, int stageCompleted, String difficulty, int score) {
         try {
+            System.out.println("Saving progress: " + username + " stage:" + stageCompleted + " score:" + score);
             // Update unlocked stage if new stage completed
             String updateSave = "UPDATE game_saves SET " +
                     "last_completed_stage = GREATEST(last_completed_stage, ?), " +

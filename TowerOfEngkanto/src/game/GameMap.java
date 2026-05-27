@@ -136,23 +136,24 @@ public class GameMap {
     }
 
     private void drawGrid(Graphics2D g2d, int offsetY) {
-        for (int col = 0; col < cols; col++) {
-            for (int row = 0; row < rows; row++) {
-                int x = col * cellSize;
-                int y = row * cellSize + offsetY;
 
-                if (!pathCells[col][row]) {
-                    g2d.setColor(new Color(255, 255, 255, 15));
-                    g2d.fillRect(x, y, cellSize, cellSize);
-                    g2d.setColor(new Color(255, 255, 255, 30));
-                    g2d.drawRect(x, y, cellSize, cellSize);
-                }
-            }
-        }
     }
 
     // Highlight a cell when hovered
     public void drawHoverCell(Graphics2D g2d, int col, int row, boolean canPlace) {
+        // Draw faint grid around hover area
+        for (int c = 0; c < cols; c++) {
+            for (int r = 0; r < rows; r++) {
+                if (pathCells[c][r])
+                    continue;
+                int x = c * cellSize;
+                int y = r * cellSize + offsetY;
+                g2d.setColor(new Color(255, 255, 255, 8));
+                g2d.drawRect(x, y, cellSize, cellSize);
+            }
+        }
+
+        // Highlight hovered cell
         int x = col * cellSize;
         int y = row * cellSize + offsetY;
         if (canPlace) {

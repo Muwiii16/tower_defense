@@ -41,11 +41,25 @@ public class GamePanel extends BasePanel {
     private String selectedTowerType;
     private int hoverCol = -1;
     private int hoverRow = -1;
+    private Tower selectedPlacedTower; // tower clicked on map
 
     // Sidebar images
     private BufferedImage mandirigmaImg;
     private BufferedImage lantakaImg;
     private BufferedImage bantayImg;
+
+    // Prep time and wave delay
+    private int prepTimer;
+    private int waveDelayTimer;
+    private boolean prepPhase;
+    private boolean waitingForNextWave;
+    private static final int PREP_SECONDS = 15;
+    private static final int WAVE_DELAY_SECONDS = 9;
+
+    // Pause
+    private boolean paused;
+
+    private int cursorX, cursorY; // current mouse position
 
     // Stage info
     private static final String[] STAGE_NAMES = {
@@ -93,6 +107,11 @@ public class GamePanel extends BasePanel {
         score = 0;
         gameOver = false;
         gameWon = false;
+        paused = false;
+        prepPhase = true;
+        prepTimer = PREP_SECONDS * 60; // 60 ticks per second
+        waitingForNextWave = false;
+        waveDelayTimer = 0;
 
         // Init collections
         enemies = new ArrayList<>();
@@ -107,6 +126,12 @@ public class GamePanel extends BasePanel {
         mandirigmaImg = loadImage("assets/images/enemies_towers/mandirigma.png");
         lantakaImg = loadImage("assets/images/enemies_towers/lantaka_cannon.png");
         bantayImg = loadImage("assets/images/enemies_towers/bantay.png");
+
+        gameTimer = new Timer(16, e -> {
+            if (!paused && !gameOver && !gameWon)
+                update();
+            repaint();
+        });
 
         // Mouse click — tower placement + wave button
         addMouseListener(new MouseAdapter() {
@@ -150,6 +175,8 @@ public class GamePanel extends BasePanel {
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
+                cursorX = e.getX();
+                cursorY = e.getY();
                 if (e.getX() >= MAP_WIDTH) {
                     hoverCol = -1;
                     hoverRow = -1;
@@ -159,6 +186,18 @@ public class GamePanel extends BasePanel {
                 if (cell != null) {
                     hoverCol = cell.x;
                     hoverRow = cell.y;
+                }
+            }
+        });
+
+        setFocusable(true);
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    paused = true;
+                    gameTimer.stop(); // ← stop timer first
+                    showPauseMenu();
                 }
             }
         });
@@ -175,6 +214,34 @@ public class GamePanel extends BasePanel {
     // ── Game Loop ──────────────────────────────────────
 
     private void update() {
+        // Prep phase countdown
+        if (prepPhase) {
+            prepTimer--;
+            if (prepTimer <= 0) {
+                prepPhase = false;
+                waveManager.startNextWave();
+            }
+            updateEnemies();
+            updateTowers();
+            updateProjectiles();
+            return;
+        }
+
+        // Waiting between waves
+        if (waitingForNextWave) {
+            waveDelayTimer--;
+            if (waveDelayTimer <= 0) {
+                waitingForNextWave = false;
+                if (!waveManager.isAllWavesComplete()) {
+                    waveManager.startNextWave();
+                }
+            }
+            updateEnemies();
+            updateTowers();
+            updateProjectiles();
+            return;
+        }
+
         waveManager.update();
         updateEnemies();
         updateTowers();
@@ -233,6 +300,11 @@ public class GamePanel extends BasePanel {
     }
 
     private void checkWaveCleared() {
+        if (!waveManager.isWaveInProgress() && enemies.isEmpty()
+                && !waveManager.isAllWavesComplete() && !waitingForNextWave) {
+            waitingForNextWave = true;
+            waveDelayTimer = WAVE_DELAY_SECONDS * 60;
+        }
         if (waveManager.isAllWavesComplete() && enemies.isEmpty()) {
             gameWon = true;
             gameTimer.stop();
@@ -305,10 +377,22 @@ public class GamePanel extends BasePanel {
             return;
 
         if (gold < tower.getCost()) {
-            JOptionPane.showMessageDialog(this, "Not enough gold!",
+            JOptionPane.showMessageDialog(this, "Not enough sampaguita!",
                     "Insufficient Funds", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+        for (Tower t : towers) {
+            double dx = mx - t.getX();
+            double dy = my - t.getY();
+            if (Math.sqrt(dx * dx + dy * dy) <= gameMap.getCellSize() / 2) {
+                selectedPlacedTower = (selectedPlacedTower == t) ? null : t;
+                return;
+            }
+        }
+        // deselect if clicking empty cell
+        if (selectedTowerType == null)
+            selectedPlacedTower = null;
 
         gold -= tower.getCost();
         occupiedCells[col][row] = true;
@@ -337,6 +421,9 @@ public class GamePanel extends BasePanel {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
         gameMap.draw(g2d);
         drawStageInfo(g2d);
 
@@ -344,6 +431,28 @@ public class GamePanel extends BasePanel {
         if (hoverCol >= 0 && selectedTowerType != null) {
             boolean canPlace = gameMap.canPlaceTower(hoverCol, hoverRow, occupiedCells);
             gameMap.drawHoverCell(g2d, hoverCol, hoverRow, canPlace);
+        }
+        // Draw tower ghost following cursor
+        if (selectedTowerType != null && cursorX < MAP_WIDTH) {
+            drawTowerGhost(g2d, cursorX, cursorY);
+        }
+
+        // Draw range of selected placed tower
+        if (selectedPlacedTower != null) {
+            drawRangeCircle(g2d, (int) selectedPlacedTower.getX(),
+                    (int) selectedPlacedTower.getY(),
+                    (int) selectedPlacedTower.getRange(),
+                    new Color(255, 255, 255, 40),
+                    new Color(255, 255, 255, 120));
+        }
+
+        // Draw range preview when hovering with selected tower
+        if (selectedTowerType != null && cursorX < MAP_WIDTH) {
+            drawRangeCircle(g2d, cursorX, cursorY,
+                    (int) getTowerRange(selectedTowerType),
+                    new Color(100, 200, 255, 30),
+                    new Color(100, 200, 255, 100));
+            drawTowerGhost(g2d, cursorX, cursorY);
         }
 
         // Draw towers
@@ -360,6 +469,74 @@ public class GamePanel extends BasePanel {
 
         drawSidebar(g2d);
         g2d.dispose();
+    }
+
+    private void drawRangeCircle(Graphics2D g2d, int cx, int cy,
+            int radius, Color fill, Color border) {
+        g2d.setColor(fill);
+        g2d.fillOval(cx - radius, cy - radius, radius * 2, radius * 2);
+        g2d.setColor(border);
+        g2d.setStroke(new BasicStroke(1.5f));
+        g2d.drawOval(cx - radius, cy - radius, radius * 2, radius * 2);
+    }
+
+    private void drawTowerGhost(Graphics2D g2d, int mx, int my) {
+        BufferedImage img = null;
+        switch (selectedTowerType) {
+            case "mandirigma":
+                img = mandirigmaImg;
+                break;
+            case "lantaka":
+                img = lantakaImg;
+                break;
+            case "bantay":
+                img = bantayImg;
+                break;
+        }
+        if (img == null)
+            return;
+
+        int size = ScreenUtils.scaleX(52);
+        Composite original = g2d.getComposite();
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+        g2d.drawImage(img, mx - size / 2, my - size / 2, size, size, null);
+        g2d.setComposite(original);
+    }
+
+    private void showPauseMenu() {
+        String[] options = { "Resume", "Restart", "Main Menu", "Exit Game" };
+        int choice = JOptionPane.showOptionDialog(this,
+                "Game Paused", "PAUSE",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                null, options, options[0]);
+
+        switch (choice) {
+            case 0:
+                paused = false;
+                gameTimer.start(); // ← restart timer
+                requestFocusInWindow();
+                break;
+            case 1:
+                restartGame();
+                break;
+            case 2:
+                returnToMainMenu();
+                break;
+            case 3:
+                System.exit(0);
+                break;
+            default:
+                paused = false;
+                gameTimer.start();
+                break;
+        }
+    }
+
+    private void restartGame() {
+        gameTimer.stop();
+        App.getInstance().addPanel(
+                new GamePanel(username, stageNumber, difficulty), "game");
+        App.getInstance().showPanel("game");
     }
 
     private void drawStageInfo(Graphics2D g2d) {
@@ -420,7 +597,7 @@ public class GamePanel extends BasePanel {
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(100));
 
         g2d.setColor(new Color(255, 210, 60));
-        g2d.drawString("Gold: " + gold,
+        g2d.drawString("Sampaguita: " + gold,
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(140));
 
         g2d.setColor(new Color(180, 220, 140));
@@ -455,9 +632,9 @@ public class GamePanel extends BasePanel {
         }
 
         // Back to menu
-        g2d.setFont(new Font("SansSerif", Font.PLAIN, ScreenUtils.scaleFont(14)));
-        g2d.setColor(new Color(180, 100, 100));
-        g2d.drawString("[ Back to Menu ]",
+        g2d.setFont(new Font("SansSerif", Font.PLAIN, ScreenUtils.scaleFont(13)));
+        g2d.setColor(new Color(150, 150, 150));
+        g2d.drawString("Press ESC to pause",
                 sx + ScreenUtils.scaleX(20), ScreenUtils.scaleY(970));
     }
 
@@ -495,6 +672,19 @@ public class GamePanel extends BasePanel {
                 y + ScreenUtils.scaleY(65));
     }
 
+    private double getTowerRange(String type) {
+        switch (type) {
+            case "mandirigma":
+                return ScreenUtils.scaleX(210);
+            case "lantaka":
+                return ScreenUtils.scaleX(175);
+            case "bantay":
+                return ScreenUtils.scaleX(350);
+            default:
+                return ScreenUtils.scaleX(200);
+        }
+    }
+
     private void drawStartWaveButton(Graphics2D g2d, int sx) {
         int btnX = sx + ScreenUtils.scaleX(20);
         int btnY = ScreenUtils.scaleY(800);
@@ -518,9 +708,18 @@ public class GamePanel extends BasePanel {
         g2d.setColor(canStart ? new Color(150, 255, 150)
                 : new Color(120, 120, 120));
 
-        String label = waveManager.isAllWavesComplete() ? "All Waves Done!"
-                : waveManager.isWaveInProgress() ? "Wave in Progress..."
-                        : "▶  Start Wave " + (waveManager.getCurrentWave() + 1);
+        String label;
+        if (prepPhase) {
+            label = "Starting in " + (prepTimer / 60 + 1) + "s...";
+        } else if (waitingForNextWave) {
+            label = "Next wave in " + (waveDelayTimer / 60 + 1) + "s...";
+        } else if (waveManager.isAllWavesComplete()) {
+            label = "All Waves Done!";
+        } else if (waveManager.isWaveInProgress()) {
+            label = "Wave in Progress...";
+        } else {
+            label = "▶  Start Wave " + (waveManager.getCurrentWave() + 1);
+        }
 
         FontMetrics fm = g2d.getFontMetrics();
         g2d.drawString(label,

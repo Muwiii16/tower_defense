@@ -15,6 +15,7 @@ public abstract class Projectile extends GameEntity {
     private boolean isAOE;
     private double aoeRadius;
     private Enemy target;
+    private double angle; // rotation in radians
 
     public Projectile(double x, double y, Enemy target, int damage,
             double projectileSpeed, int spriteSize,
@@ -50,6 +51,7 @@ public abstract class Projectile extends GameEntity {
         double dx = target.getX() - getX();
         double dy = target.getY() - getY();
         double dist = Math.sqrt(dx * dx + dy * dy);
+        angle = Math.atan2(dy, dx); // ← calculate angle towards target
 
         double projectileSpeed = Math.sqrt(speedX * speedX + speedY * speedY);
 
@@ -74,7 +76,21 @@ public abstract class Projectile extends GameEntity {
     public void draw(Graphics2D g2d) {
         if (!isAlive())
             return;
-        drawSprite(g2d, spriteSize, spriteSize);
+        if (getFrames() == null || getFrames().length == 0)
+            return;
+        BufferedImage img = getFrames()[getCurrentFrame()];
+        if (img == null)
+            return;
+
+        int size = getSpriteSize();
+        int x = (int) getX();
+        int y = (int) getY();
+
+        Graphics2D g2dCopy = (Graphics2D) g2d.create();
+        g2dCopy.translate(x, y);
+        g2dCopy.rotate(angle); // ← rotate around center
+        g2dCopy.drawImage(img, -size / 2, -size / 2, size, size, null);
+        g2dCopy.dispose();
     }
 
     // Load single image as projectile sprite
