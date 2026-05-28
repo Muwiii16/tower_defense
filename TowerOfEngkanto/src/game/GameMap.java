@@ -104,11 +104,79 @@ public class GameMap {
     }
 
     private void buildMap2Path() {
-        // TODO: add map2 path waypoints
+        int[][] gridPath = {
+                { 0, 6 }, { 1, 6 }, { 2, 6 }, { 3, 6 }, { 4, 6 }, { 5, 6 }, { 6, 6 }, { 7, 6 }, { 7, 5 },
+                { 7, 4 }, { 7, 3 }, { 7, 2 }, { 8, 2 }, { 9, 2 }, { 10, 2 }, { 11, 2 }, { 12, 2 },
+                { 12, 3 }, { 12, 4 }, { 12, 5 }, { 12, 6 }, { 13, 6 }, { 14, 6 }, { 15, 6 }, { 16, 6 },
+                { 16, 7 }, { 16, 8 }, { 16, 9 }
+        };
+
+        for (int[] cell : gridPath) {
+            int col = cell[0];
+            int row = cell[1];
+            if (col < cols && row < rows) {
+                pathCells[col][row] = true;
+            }
+            int px = col * cellSize + cellSize / 2;
+            int py = row * cellSize + cellSize / 2 + offsetY;
+            waypoints.add(new Point(px, py));
+        }
+
+        // Blocked cells — not path but also not placeable
+        int[][] blockedCells = {
+                { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 }, { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 }, { 3, 0 },
+                { 3, 1 }, { 3, 2 }, { 4, 0 }, { 4, 1 }, { 4, 2 }, { 19, 0 }, { 19, 1 }, { 19, 2 },
+                { 18, 0 }, { 18, 1 }, { 18, 2 }, { 17, 0 }, { 17, 1 }, { 17, 2 }, { 16, 1 }, { 2, 8 }, { 3, 8 },
+                { 4, 8 }, { 2, 9 }, { 3, 9 }, { 4, 9 },
+                { 17, 8 }, { 18, 8 }, { 19, 8 },
+                { 16, 9 }, { 17, 9 }, { 18, 9 }, { 19, 9 },
+                { 12, 10 }, { 13, 10 }, { 14, 10 }, { 15, 10 }, { 16, 10 }, { 17, 10 }, { 18, 10 }, { 19, 10 },
+        };
+        for (int[] cell : blockedCells) {
+            int col = cell[0];
+            int row = cell[1];
+            if (col < cols && row < rows) {
+                pathCells[col][row] = true; // mark as unavailable
+            }
+        }
     }
 
     private void buildMap3Path() {
-        // TODO: add map3 path waypoints
+        // 1. Define the exact grid coordinates the road passes through
+        int[][] gridPath = {
+                // Enters from the left
+                { 0, 3 }, { 1, 3 }, { 2, 3 }, { 3, 3 },{ 4, 3 },{ 5, 3 },{ 6, 3 },
+                // Curves down
+                { 6, 4 }, { 6, 5 }, { 6, 6 },{ 6, 7 }, { 6, 8 },
+                // Moves right along the bottom
+                { 7, 8 }, { 8, 8 },{ 9, 8 }, { 10, 8 },
+                // Curves back up
+                { 10, 7 }, { 10, 6 }, { 10, 5 }, { 10, 4 },{ 10, 3 }, { 10, 2 },
+                // Moves right across the top
+                { 11, 2 }, { 12, 2 }, { 13, 2 }, { 14, 2 }, 
+                // Dips down slightly
+                { 14, 3 }, { 14, 4 },{ 14, 5 }, { 14, 6 },
+                // Moves right again
+                { 15, 6 }, { 16, 6 }, { 17, 6 }, { 18, 6 },{ 19, 6 },
+        };
+
+        // 2. Clear any old waypoints just to be safe
+        waypoints.clear();
+
+        // 3. Loop through the array to register the path in the game
+        for (int[] cell : gridPath) {
+            int c = cell[0];
+            int r = cell[1];
+
+            // Make sure the coordinates are safely inside the map grid
+            if (c >= 0 && c < cols && r >= 0 && r < rows) {
+                // Mark this cell so the player CANNOT place a tower on the road
+                pathCells[c][r] = true;
+
+                // Convert the grid coordinate into actual (X, Y) pixels for the enemies
+                waypoints.add(cellToPixel(c, r));
+            }
+        }
     }
 
     public void draw(Graphics2D g2d) {
@@ -123,13 +191,17 @@ public class GameMap {
             g2d.drawImage(mapImage, 0, offsetY, mapWidth, mapHeight, null);
         }
 
-        // Draw shrine at last waypoint (13,0)
-        if (shrineImage != null) {
-            int shrineCol = 13;
-            int shrineRow = 0;
-            int sx = shrineCol * cellSize;
-            int sy = shrineRow * cellSize + offsetY;
-            g2d.drawImage(shrineImage, sx, sy, cellSize, cellSize, null); // ← cellSize x cellSize instead of cellSize*2
+        // Draw shrine dynamically at the LAST waypoint of the current stage
+        if (shrineImage != null && !waypoints.isEmpty()) {
+            // 1. Get the very last waypoint (end of the path)
+            Point lastWaypoint = waypoints.get(waypoints.size() - 1);
+
+            // 2. Waypoints store the CENTER of the cell. We subtract half the cell size
+            // to get the top-left X and Y coordinates needed to draw the image.
+            int sx = lastWaypoint.x - cellSize / 2;
+            int sy = lastWaypoint.y - cellSize / 2;
+
+            g2d.drawImage(shrineImage, sx, sy, cellSize, cellSize, null);
         }
 
         drawGrid(g2d, offsetY);

@@ -15,7 +15,6 @@ public class WaveManager {
     private int currentWave;
     private int totalWaves;
     private int spawnTimer;
-    private int spawnDelay; // ticks between each enemy spawn
     private int spawnIndex; // which enemy in the queue to spawn next
     private List<String> spawnQueue; // enemy types to spawn this wave
     private boolean waveInProgress;
@@ -30,7 +29,6 @@ public class WaveManager {
         this.currentWave = 0;
         this.totalWaves = 5; // 5 waves per stage
         this.spawnTimer = 0;
-        this.spawnDelay = 90; // ~1.5 seconds between spawns at 60fps
         this.spawnIndex = 0;
         this.spawnQueue = new ArrayList<>();
         this.waveInProgress = false;
@@ -44,9 +42,17 @@ public class WaveManager {
         // Spawn enemies from queue
         if (spawnIndex < spawnQueue.size()) {
             spawnTimer++;
-            if (spawnTimer >= spawnDelay) {
+
+            // 1. Look at the NEXT enemy in the queue
+            String nextEnemyType = spawnQueue.get(spawnIndex);
+
+            // 2. Get the specific delay required for this enemy type
+            int requiredDelay = getSpawnDelay(nextEnemyType);
+
+            // 3. Check if we've waited long enough for this specific enemy
+            if (spawnTimer >= requiredDelay) {
                 spawnTimer = 0;
-                spawnEnemy(spawnQueue.get(spawnIndex));
+                spawnEnemy(nextEnemyType);
                 spawnIndex++;
             }
         } else {
@@ -214,6 +220,19 @@ public class WaveManager {
                 return false;
         }
         return true;
+    }
+
+    private int getSpawnDelay(String enemyType) {
+        switch (enemyType) {
+            case "tikbalang":
+                return 40; // Quick spawn (~0.6 seconds) to keep them grouped
+            case "kapre":
+                return 160; // Slow spawn (~2.6 seconds) to space them out
+            case "manananggal":
+                return 90; // Your current default (~1.5 seconds)
+            default:
+                return 90; // Fallback just in case
+        }
     }
 
     // ── Getters ──────────────────────────────

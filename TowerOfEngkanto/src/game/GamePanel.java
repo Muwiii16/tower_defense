@@ -52,7 +52,7 @@ public class GamePanel extends BasePanel {
     private int waveDelayTimer;
     private boolean prepPhase;
     private boolean waitingForNextWave;
-    private static final int PREP_SECONDS = 15;
+    private static final int PREP_SECONDS = 10;
     private static final int WAVE_DELAY_SECONDS = 9;
 
     // Pause

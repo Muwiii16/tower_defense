@@ -57,22 +57,23 @@ public abstract class Tower extends GameEntity {
 
     // Find closest enemy in range from list
     public void findTarget(List<Enemy> enemies) {
-        if (target != null && target.isAlive() && isInRange(target))
-            return;
+        // Don't keep old target — always re-evaluate priority
         target = null;
-        double closestDist = Double.MAX_VALUE;
+        Enemy bestTarget = null;
+
         for (Enemy e : enemies) {
             if (!e.isAlive())
                 continue;
-            double dist = distanceTo(e);
-            if (dist <= range && dist < closestDist) {
-                // Prioritize by target priority — subclasses override selectTarget()
-                if (selectTarget(e, target)) {
-                    closestDist = dist;
-                    target = e;
-                }
+            if (distanceTo(e) > range)
+                continue;
+
+            if (bestTarget == null) {
+                bestTarget = e;
+            } else if (selectTarget(e, bestTarget)) {
+                bestTarget = e;
             }
         }
+        target = bestTarget;
     }
 
     // Subclasses override this to change targeting priority
